@@ -95,7 +95,6 @@ go mod download
 go install github.com/sqldef/sqldef/cmd/psqldef@latest
 
 # フロントエンドの依存関係
-cd web
 pnpm install
 ```
 
@@ -120,7 +119,6 @@ make db-dry-run
 
 #### フロントエンドのAPIコード生成 (Orval)
 ```bash
-cd web
 pnpm run generate:api
 ```
 
@@ -160,7 +158,7 @@ go run cmd/server/main.go
 ```bash
 make run-frontend
 # または
-cd web && pnpm run dev
+pnpm run dev
 ```
 開発サーバーは http://localhost:3000 で起動します。
 
@@ -301,10 +299,9 @@ function UserList() {
 shadcn/uiのコンポーネントを追加するには、pnpmを使用します：
 
 ```bash
-cd web
-pnpm dlx shadcn@latest add button
-pnpm dlx shadcn@latest add card
-pnpm dlx shadcn@latest add input
+pnpm --filter web dlx shadcn@latest add button
+pnpm --filter web dlx shadcn@latest add card
+pnpm --filter web dlx shadcn@latest add input
 # など
 ```
 
@@ -397,7 +394,6 @@ OrvalはOpenAPI仕様からReact Query（TanStack Query）のhooksを自動生�
 ### API コード生成
 
 ```bash
-cd web
 pnpm run generate:api
 ```
 
@@ -486,7 +482,6 @@ Vitest + React Testing Libraryを使用：
 make test-frontend
 
 # または直接
-cd web
 pnpm run test
 
 # カバレッジ付き
@@ -532,7 +527,6 @@ go build -o bin/server cmd/server/main.go
 
 ### フロントエンド
 ```bash
-cd web
 pnpm run build
 ```
 

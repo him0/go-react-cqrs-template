@@ -10,6 +10,7 @@ bin/
 go.work
 
 # Frontend
+node_modules/
 web/node_modules/
 web/dist/
 web/dist-ssr/
@@ -17,7 +18,7 @@ web/.env.local
 web/.env.development.local
 web/.env.test.local
 web/.env.production.local
-web/pnpm-lock.yaml
+pnpm-lock.yaml
 
 # Generated code
 web/src/api/generated/
