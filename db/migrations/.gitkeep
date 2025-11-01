@@ -14,14 +14,14 @@
 
 ## 🚀 マイグレーションファイルの生成方法
 
-### 方法1: Makefileコマンド（推奨）
+### 方法1: Taskコマンド（推奨）
 
 ```bash
 # スキーマを変更
 vim db/schema/schema.sql
 
 # マイグレーションファイルを生成
-make db-generate-migration NAME=add_user_status
+task db:generate-migration NAME=add_user_status
 
 # 生成されたファイルを確認
 cat db/migrations/20250101120000_add_user_status.sql
@@ -37,7 +37,7 @@ cat db/migrations/20250101120000_add_user_status.sql
 
 ```bash
 # 現在のDBスキーマ全体をエクスポート
-make db-export > db/migrations/001_baseline.sql
+task db:export > db/migrations/001_baseline.sql
 
 # または
 ./scripts/export-schema.sh db/migrations/001_baseline.sql
@@ -53,17 +53,17 @@ vim db/schema/schema.sql
 # ALTER TABLE users ADD COLUMN status VARCHAR(50);
 
 # 2. マイグレーションファイルを生成
-make db-generate-migration NAME=add_user_status
+task db:generate-migration NAME=add_user_status
 
 # 3. 生成された内容を確認
 # db/migrations/20250101120000_add_user_status.sql:
 # ALTER TABLE users ADD COLUMN status VARCHAR(50);
 
 # 4. マイグレーションを適用
-make db-migrate
+task db:migrate
 
 # 5. DAOコードを再生成（sqlc）
-make generate-dao
+task generate:dao
 ```
 
 ## ✅ マイグレーションファイルの利点
@@ -86,7 +86,7 @@ make generate-dao
 sqldefは**宣言的スキーマ管理**を採用しています：
 
 - `db/schema/schema.sql` = 「あるべき姿」を定義
-- `make db-migrate` = 現在のDBとの差分を自動計算して適用
+- `task db:migrate` = 現在のDBとの差分を自動計算して適用
 - マイグレーションファイル = 変更履歴の記録（オプション）
 
 このアプローチにより：

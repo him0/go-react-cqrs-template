@@ -5,7 +5,7 @@
 ## 生成方法
 
 ```bash
-make generate-dao
+task generate:dao
 ```
 
 または直接（sqlcコマンドを使用）：
@@ -18,7 +18,7 @@ go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
 sqlc generate
 ```
 
-**Note:** sqlcは`tools.go`で依存関係として管理されており、`make setup`でインストールされます。
+**Note:** sqlcは`tools.go`で依存関係として管理されており、`task setup`でインストールされます。
 
 ## 生成されるファイル
 

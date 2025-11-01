@@ -105,8 +105,6 @@ mise install
 
 ### インストール
 
-#### オプション1: Taskfile を使用（推奨）
-
 1. Taskをインストール:
 ```bash
 go install github.com/go-task/task/v3/cmd/task@latest
@@ -127,18 +125,6 @@ task setup
 task --list
 ```
 
-#### オプション2: Makefile を使用（従来）
-
-1. すべての依存関係をインストール:
-```bash
-make setup
-```
-
-これにより以下がインストールされます：
-- Go依存関係（`go mod download`）
-- 開発ツール（psqldef、sqlc、goimportsなど）
-- フロントエンド依存関係（pnpm）
-
 #### 個別インストール
 
 ```bash
@@ -152,8 +138,6 @@ go install github.com/air-verse/air@latest
 go install github.com/go-task/task/v3/cmd/task@latest
 
 # または tools.goに定義されたツールを一括インストール
-make install-tools
-# または
 task install-tools
 
 # フロントエンドの依存関係
@@ -165,12 +149,6 @@ pnpm install
 - `go install`でインストール後、コマンドとして直接実行可能
 - バージョンはgo.modで管理
 
-**TaskfileとMakefileの比較:**
-- **Taskfile** (推奨): YAMLベースで読みやすい、クロスプラットフォーム、依存関係管理が優れている
-- **Makefile** (従来): シンプルだが記法が独特、Windowsで問題が発生しやすい
-
-両方のファイルが提供されているので、好みに応じて選択できます。
-
 ### データベースのセットアップ
 
 1. PostgreSQLをPodmanで起動:
@@ -181,15 +159,11 @@ task podman:up
 2. データベースマイグレーションを実行:
 ```bash
 task db:migrate
-# または
-make db-migrate
 ```
 
 マイグレーションをドライランで確認する場合:
 ```bash
 task db:dry-run
-# または
-make db-dry-run
 ```
 
 ### その他のコマンド
@@ -216,8 +190,6 @@ sqldefは宣言的アプローチですが、マイグレーション履歴を�
 ```bash
 task db:export > db/migrations/001_baseline.sql
 # または
-make db-export > db/migrations/001_baseline.sql
-# または
 ./scripts/export-schema.sh db/migrations/001_baseline.sql
 ```
 
@@ -228,8 +200,6 @@ make db-export > db/migrations/001_baseline.sql
 # 2. 差分マイグレーションを生成
 task db:generate-migration NAME=add_user_status
 # または
-make db-generate-migration NAME=add_user_status
-# または
 ./scripts/generate-migration.sh add_user_status
 
 # 3. 生成されたマイグレーションファイルを確認
@@ -237,8 +207,6 @@ make db-generate-migration NAME=add_user_status
 
 # 4. マイグレーションを適用
 task db:migrate
-# または
-make db-migrate
 ```
 
 **マイグレーションファイルの利点:**
@@ -257,8 +225,6 @@ make db-migrate
 #### バックエンドのDAO生成 (sqlc)
 ```bash
 task generate:dao
-# または
-make generate-dao
 ```
 
 これにより、`internal/infrastructure/dao`に以下が生成されます:
@@ -275,7 +241,7 @@ make generate-dao
 
 **クエリの追加方法:**
 1. `db/queries/*.sql` にSQLクエリを追加
-2. `make generate-dao` で再生成
+2. `task generate:dao` で再生成
 
 **直接実行する場合:**
 ```bash
@@ -317,8 +283,6 @@ task podman:up
 2. データベースマイグレーション:
 ```bash
 task db:migrate
-# または
-make db-migrate
 ```
 
 3. バックエンド起動（別ターミナル - ホットリロード対応）:
@@ -334,8 +298,6 @@ air
 ```bash
 task dev:frontend
 # または
-make run-frontend
-# または
 pnpm run dev
 ```
 開発サーバーは http://localhost:3000 で起動します。
@@ -350,13 +312,11 @@ task podman:up
 2. データベースマイグレーション:
 ```bash
 task db:migrate
-# または
-make db-migrate
 ```
 
 3. バックエンド起動（別ターミナル）:
 ```bash
-make run-backend
+task run:backend
 # または
 go run cmd/server/main.go
 ```
@@ -364,7 +324,7 @@ go run cmd/server/main.go
 
 4. フロントエンド起動（別ターミナル）:
 ```bash
-make run-frontend
+task run:frontend
 # または
 pnpm run dev
 ```
@@ -696,8 +656,6 @@ function UserList() {
 
 ```bash
 task test
-# または
-make test
 ```
 
 ### バックエンドテスト
@@ -707,9 +665,6 @@ Goのテストフレームワークを使用：
 ```bash
 # テストを実行
 task test:backend
-# または
-make test-backend
-
 # または直接
 go test -v ./...
 
@@ -729,9 +684,6 @@ Vitest + React Testing Libraryを使用：
 ```bash
 # テストを実行
 task test:frontend
-# または
-make test-frontend
-
 # または直接
 pnpm run test
 
@@ -743,8 +695,6 @@ pnpm run test:ui
 
 # ウォッチモード
 task test:watch
-# または
-make test-watch
 ```
 
 **テストファイル:**
@@ -755,8 +705,6 @@ make test-watch
 
 ```bash
 task test:coverage
-# または
-make test-coverage
 ```
 
 カバレッジレポートは以下に生成されます：
@@ -781,8 +729,6 @@ GitHub Actionsを使用した自動テスト：
 ### バックエンド
 ```bash
 task build:backend
-# または
-make build-backend
 # または直接
 go build -o bin/server cmd/server/main.go
 ```
@@ -790,8 +736,6 @@ go build -o bin/server cmd/server/main.go
 ### フロントエンド
 ```bash
 task build:frontend
-# または
-make build-frontend
 # または直接
 pnpm run build
 ```
@@ -799,8 +743,6 @@ pnpm run build
 ### すべてをビルド
 ```bash
 task build
-# または
-make build
 ```
 
 ## ライセンス

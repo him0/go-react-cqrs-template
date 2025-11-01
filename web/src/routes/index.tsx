@@ -42,7 +42,7 @@ function Index() {
         <h2 className="text-2xl font-semibold mb-4">Getting Started</h2>
         <div className="space-y-3 text-sm">
           <div>
-            <code className="bg-muted px-2 py-1 rounded text-xs">make install</code>
+            <code className="bg-muted px-2 py-1 rounded text-xs">task install</code>
             <p className="text-muted-foreground mt-1">Install dependencies</p>
           </div>
           <div>
@@ -52,11 +52,11 @@ function Index() {
             <p className="text-muted-foreground mt-1">Generate API code with Orval</p>
           </div>
           <div>
-            <code className="bg-muted px-2 py-1 rounded text-xs">make run-backend</code>
+            <code className="bg-muted px-2 py-1 rounded text-xs">task run:backend</code>
             <p className="text-muted-foreground mt-1">Start backend server (port 8080)</p>
           </div>
           <div>
-            <code className="bg-muted px-2 py-1 rounded text-xs">make run-frontend</code>
+            <code className="bg-muted px-2 py-1 rounded text-xs">task run:frontend</code>
             <p className="text-muted-foreground mt-1">Start frontend dev server (port 3000)</p>
           </div>
         </div>

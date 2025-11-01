@@ -38,7 +38,7 @@ if [ -s "$MIGRATION_FILE" ]; then
     echo ""
     echo "--- Next Steps ---"
     echo "1. Review the migration file: $MIGRATION_FILE"
-    echo "2. Apply the migration: make db-migrate"
+    echo "2. Apply the migration: task db:migrate"
 else
     echo "✗ No schema changes detected"
     rm "$MIGRATION_FILE"
