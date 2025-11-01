@@ -34,7 +34,7 @@ GolangのWebサーバー（DDD構成）+ Vite React + OpenAPI + Orvalを使用�
 
 ```
 .
-├── api/                    # OpenAPI仕様
+├── openapi/                # OpenAPI仕様
 │   ├── openapi.yaml
 │   └── generator-config.yaml
 ├── cmd/
@@ -252,7 +252,7 @@ Orvalは OpenAPI 仕様から TypeScript のコードを自動生成します。
 export default defineConfig({
   api: {
     input: {
-      target: '../api/openapi.yaml',  // OpenAPI仕様のパス
+      target: '../openapi/openapi.yaml',  // OpenAPI仕様のパス
     },
     output: {
       mode: 'tags-split',             // タグごとにファイル分割
