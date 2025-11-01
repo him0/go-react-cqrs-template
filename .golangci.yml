@@ -49,6 +49,31 @@ linters-settings:
     # Disable shadow variable checking (can be noisy)
     disable:
       - shadow
+    # Enable specific analyzers
+    enable:
+      - asmdecl
+      - assign
+      - atomic
+      - bools
+      - buildtag
+      - cgocall
+      - composites
+      - copylocks
+      - errorsas
+      - httpresponse
+      - ifaceassert
+      - loopclosure
+      - lostcancel
+      - nilfunc
+      - printf
+      - shift
+      - stdmethods
+      - structtag
+      - tests
+      - unmarshal
+      - unreachable
+      - unsafeptr
+      - unusedresult
 
   gofmt:
     # Simplify code

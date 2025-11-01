@@ -1,4 +1,4 @@
-.PHONY: help install run-backend run-frontend generate-api build clean test test-backend test-frontend test-coverage docker-up docker-down docker-logs db-migrate db-dry-run setup lint fmt vet check-fmt check-imports ci-test
+.PHONY: help install run-backend run-frontend generate-api build clean test test-backend test-frontend test-coverage docker-up docker-down docker-logs db-migrate db-dry-run setup lint fmt vet check-fmt check-imports modernize modernize-check ci-test
 
 help: ## ヘルプを表示
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
@@ -6,6 +6,8 @@ help: ## ヘルプを表示
 setup: ## 開発環境のセットアップ
 	go mod download
 	go install github.com/sqldef/sqldef/cmd/psqldef@latest
+	go install golang.org/x/tools/gopls/internal/analysis/modernize/cmd/modernize@latest
+	go install golang.org/x/tools/cmd/goimports@latest
 	cd web && pnpm install
 
 install: ## 依存関係をインストール
@@ -100,5 +102,13 @@ check-imports: ## goimportsチェック（CI用）
 		exit 1; \
 	fi
 
-ci-test: lint vet check-fmt check-imports test-backend ## CI用のすべてのチェックを実行
+modernize: ## modernize analyzerでコードを自動修正
+	@echo "modernize analyzerを実行してコードを現代化します..."
+	@go run golang.org/x/tools/gopls/internal/analysis/modernize/cmd/modernize@latest -fix -test ./...
+
+modernize-check: ## modernize analyzerでチェックのみ実行
+	@echo "modernize analyzerでチェック中..."
+	@go run golang.org/x/tools/gopls/internal/analysis/modernize/cmd/modernize@latest ./...
+
+ci-test: lint vet check-fmt check-imports modernize-check test-backend ## CI用のすべてのチェックを実行
 	@echo "すべてのチェックが完了しました"
