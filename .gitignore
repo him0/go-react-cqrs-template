@@ -9,6 +9,10 @@ bin/
 *.out
 go.work
 
+# Air (hot reload)
+tmp/
+build-errors.log
+
 # Frontend
 node_modules/
 web/node_modules/

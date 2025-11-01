@@ -85,6 +85,8 @@ GolangのWebサーバー（DDD構成）+ Vite React + OpenAPI + Orvalを使用�
 - pnpm
 - Docker & Docker Compose
 - mise (推奨) - バージョン管理ツール
+- Air (推奨) - Golangのホットリロードツール
+- Task (推奨) - Makefileの代替タスクランナー
 
 ### バージョン管理 (mise)
 
@@ -103,6 +105,30 @@ mise install
 
 ### インストール
 
+#### オプション1: Taskfile を使用（推奨）
+
+1. Taskをインストール:
+```bash
+go install github.com/go-task/task/v3/cmd/task@latest
+```
+
+2. すべての依存関係をインストール:
+```bash
+task setup
+```
+
+これにより以下がインストールされます：
+- Go依存関係（`go mod download`）
+- 開発ツール（psqldef、sqlc、goimports、Air、Taskなど）
+- フロントエンド依存関係（pnpm）
+
+3. 利用可能なタスクを確認:
+```bash
+task --list
+```
+
+#### オプション2: Makefile を使用（従来）
+
 1. すべての依存関係をインストール:
 ```bash
 make setup
@@ -113,17 +139,22 @@ make setup
 - 開発ツール（psqldef、sqlc、goimportsなど）
 - フロントエンド依存関係（pnpm）
 
-または個別にインストール:
+#### 個別インストール
 
 ```bash
 # Goの依存関係
 go mod download
 
-# 開発ツール（tools.goに定義）
-make install-tools
-# または個別に
+# 開発ツール
 go install github.com/sqldef/sqldef/cmd/psqldef@latest
 go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
+go install github.com/air-verse/air@latest
+go install github.com/go-task/task/v3/cmd/task@latest
+
+# または tools.goに定義されたツールを一括インストール
+make install-tools
+# または
+task install-tools
 
 # フロントエンドの依存関係
 pnpm install
@@ -134,20 +165,32 @@ pnpm install
 - `go install`でインストール後、コマンドとして直接実行可能
 - バージョンはgo.modで管理
 
+**TaskfileとMakefileの比較:**
+- **Taskfile** (推奨): YAMLベースで読みやすい、クロスプラットフォーム、依存関係管理が優れている
+- **Makefile** (従来): シンプルだが記法が独特、Windowsで問題が発生しやすい
+
+両方のファイルが提供されているので、好みに応じて選択できます。
+
 ### データベースのセットアップ
 
 1. PostgreSQLをDockerで起動:
 ```bash
+task docker:up
+# または
 make docker-up
 ```
 
 2. データベースマイグレーションを実行:
 ```bash
+task db:migrate
+# または
 make db-migrate
 ```
 
 マイグレーションをドライランで確認する場合:
 ```bash
+task db:dry-run
+# または
 make db-dry-run
 ```
 
@@ -157,6 +200,8 @@ sqldefは宣言的アプローチですが、マイグレーション履歴を�
 
 #### 1. 現在のスキーマをエクスポート（ベースライン作成）
 ```bash
+task db:export > db/migrations/001_baseline.sql
+# または
 make db-export > db/migrations/001_baseline.sql
 # または
 ./scripts/export-schema.sh db/migrations/001_baseline.sql
@@ -167,6 +212,8 @@ make db-export > db/migrations/001_baseline.sql
 # 1. db/schema/schema.sql を編集してテーブルやカラムを追加
 
 # 2. 差分マイグレーションを生成
+task db:generate-migration NAME=add_user_status
+# または
 make db-generate-migration NAME=add_user_status
 # または
 ./scripts/generate-migration.sh add_user_status
@@ -175,6 +222,8 @@ make db-generate-migration NAME=add_user_status
 # → db/migrations/20250101120000_add_user_status.sql
 
 # 4. マイグレーションを適用
+task db:migrate
+# または
 make db-migrate
 ```
 
@@ -193,6 +242,8 @@ make db-migrate
 
 #### バックエンドのDAO生成 (sqlc)
 ```bash
+task generate:dao
+# または
 make generate-dao
 ```
 
@@ -242,6 +293,43 @@ pnpm run generate:api
 
 ### 開発環境の起動手順
 
+#### オプション1: Air を使った開発（推奨 - ホットリロード対応）
+
+1. PostgreSQLを起動:
+```bash
+task docker:up
+# または
+make docker-up
+```
+
+2. データベースマイグレーション:
+```bash
+task db:migrate
+# または
+make db-migrate
+```
+
+3. バックエンド起動（別ターミナル - ホットリロード対応）:
+```bash
+task dev
+# または
+air
+```
+サーバーは http://localhost:8080 で起動します。
+**Airの利点**: `.go`ファイルを変更すると自動的にサーバーが再起動されます。
+
+4. フロントエンド起動（別ターミナル）:
+```bash
+task dev:frontend
+# または
+make run-frontend
+# または
+pnpm run dev
+```
+開発サーバーは http://localhost:3000 で起動します。
+
+#### オプション2: 通常起動（ホットリロードなし）
+
 1. PostgreSQLを起動:
 ```bash
 make docker-up
@@ -267,6 +355,29 @@ make run-frontend
 pnpm run dev
 ```
 開発サーバーは http://localhost:3000 で起動します。
+
+### Air（ホットリロードツール）について
+
+Airは`.go`ファイルの変更を検知して自動的にサーバーを再起動するツールです。
+
+**設定ファイル**: `.air.toml`
+
+**特徴**:
+- ファイル変更時の自動再ビルド・再起動
+- 高速な開発サイクル
+- 除外ディレクトリの設定（`tmp/`, `vendor/`, `web/`など）
+- ビルドエラーログ（`build-errors.log`）
+
+**カスタマイズ**:
+`.air.toml`を編集して監視対象やビルドコマンドを変更できます。
+
+```bash
+# Airを直接実行
+air
+
+# 設定ファイルを指定
+air -c .air.toml
+```
 
 ### 環境変数
 
@@ -570,6 +681,8 @@ function UserList() {
 ### すべてのテストを実行
 
 ```bash
+task test
+# または
 make test
 ```
 
@@ -579,6 +692,8 @@ Goのテストフレームワークを使用：
 
 ```bash
 # テストを実行
+task test:backend
+# または
 make test-backend
 
 # または直接
@@ -599,6 +714,8 @@ Vitest + React Testing Libraryを使用：
 
 ```bash
 # テストを実行
+task test:frontend
+# または
 make test-frontend
 
 # または直接
@@ -611,6 +728,8 @@ pnpm run test:coverage
 pnpm run test:ui
 
 # ウォッチモード
+task test:watch
+# または
 make test-watch
 ```
 
@@ -621,6 +740,8 @@ make test-watch
 ### カバレッジレポート
 
 ```bash
+task test:coverage
+# または
 make test-coverage
 ```
 
@@ -645,12 +766,27 @@ GitHub Actionsを使用した自動テスト：
 
 ### バックエンド
 ```bash
+task build:backend
+# または
+make build-backend
+# または直接
 go build -o bin/server cmd/server/main.go
 ```
 
 ### フロントエンド
 ```bash
+task build:frontend
+# または
+make build-frontend
+# または直接
 pnpm run build
+```
+
+### すべてをビルド
+```bash
+task build
+# または
+make build
 ```
 
 ## ライセンス

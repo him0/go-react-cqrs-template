@@ -1,0 +1,266 @@
+version: '3'
+
+vars:
+  DB_USER: postgres
+  DB_PASSWORD: postgres
+  DB_HOST: localhost
+  DB_PORT: 5432
+  DB_NAME: app_db
+
+tasks:
+  default:
+    desc: ヘルプを表示
+    cmds:
+      - task --list
+
+  # セットアップ関連
+  setup:
+    desc: 開発環境のセットアップ
+    cmds:
+      - go mod download
+      - go install github.com/sqldef/sqldef/cmd/psqldef@latest
+      - go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
+      - go install golang.org/x/tools/gopls/internal/analysis/modernize/cmd/modernize@latest
+      - go install golang.org/x/tools/cmd/goimports@latest
+      - go install github.com/air-verse/air@latest
+      - go install github.com/go-task/task/v3/cmd/task@latest
+      - pnpm install
+
+  install:
+    desc: 依存関係をインストール
+    cmds:
+      - go mod download
+      - pnpm install
+
+  install-tools:
+    desc: tools.goに定義されたツールをインストール
+    cmds:
+      - echo "Installing tools from tools.go..."
+      - cat tools.go | grep _ | awk -F'"' '{print $2}' | xargs -I % go install %@latest
+
+  install-air:
+    desc: Airをインストール
+    cmds:
+      - go install github.com/air-verse/air@latest
+    status:
+      - which air
+
+  # Docker関連
+  docker:up:
+    desc: Dockerコンテナを起動
+    cmds:
+      - docker-compose up -d
+
+  docker:down:
+    desc: Dockerコンテナを停止
+    cmds:
+      - docker-compose down
+
+  docker:logs:
+    desc: Dockerログを表示
+    cmds:
+      - docker-compose logs -f
+
+  # データベース関連
+  db:migrate:
+    desc: psqldefを使用してデータベースマイグレーションを実行
+    cmds:
+      - psqldef -U {{.DB_USER}} -p {{.DB_PORT}} -h {{.DB_HOST}} {{.DB_NAME}} --password={{.DB_PASSWORD}} --file=db/schema/schema.sql
+
+  db:dry-run:
+    desc: データベースマイグレーションのドライラン
+    cmds:
+      - psqldef -U {{.DB_USER}} -p {{.DB_PORT}} -h {{.DB_HOST}} {{.DB_NAME}} --password={{.DB_PASSWORD}} --file=db/schema/schema.sql --dry-run
+
+  db:export:
+    desc: 現在のDBスキーマをエクスポート
+    cmds:
+      - echo "Exporting current database schema..."
+      - psqldef -U {{.DB_USER}} -p {{.DB_PORT}} -h {{.DB_HOST}} {{.DB_NAME}} --password={{.DB_PASSWORD}} --export
+
+  db:generate-migration:
+    desc: スキーマ変更からマイグレーションファイルを生成
+    cmds:
+      - |
+        if [ -z "{{.NAME}}" ]; then
+          echo "Error: NAME is required. Usage: task db:generate-migration NAME=add_user_status"
+          exit 1
+        fi
+        TIMESTAMP=$(date +%Y%m%d%H%M%S)
+        FILENAME="db/migrations/${TIMESTAMP}_{{.NAME}}.sql"
+        psqldef -U {{.DB_USER}} -p {{.DB_PORT}} -h {{.DB_HOST}} {{.DB_NAME}} --password={{.DB_PASSWORD}} --file=db/schema/schema.sql --dry-run > ${FILENAME}
+        if [ -s ${FILENAME} ]; then
+          echo "Migration file created: ${FILENAME}"
+          cat ${FILENAME}
+        else
+          echo "No schema changes detected. Removing empty file."
+          rm ${FILENAME}
+        fi
+
+  # 開発サーバー関連
+  dev:
+    desc: 開発サーバーをAirで起動（ホットリロード対応）
+    deps: [install-air]
+    cmds:
+      - air
+
+  dev:backend:
+    desc: バックエンド開発サーバーをAirで起動
+    deps: [install-air]
+    cmds:
+      - air
+
+  dev:frontend:
+    desc: フロントエンド開発サーバーを起動
+    cmds:
+      - pnpm run dev
+
+  run:backend:
+    desc: バックエンドサーバーを起動（通常起動）
+    cmds:
+      - go run cmd/server/main.go
+
+  run:frontend:
+    desc: フロントエンド開発サーバーを起動
+    cmds:
+      - pnpm run dev
+
+  # コード生成関連
+  generate:api:
+    desc: APIコードを生成（フロントエンド）
+    cmds:
+      - pnpm run generate:api
+
+  generate:dao:
+    desc: DAOコードをsqlcで生成
+    cmds:
+      - cmd: which sqlc > /dev/null || go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
+      - sqlc generate
+
+  # ビルド関連
+  build:backend:
+    desc: バックエンドをビルド
+    cmds:
+      - go build -o bin/server cmd/server/main.go
+
+  build:frontend:
+    desc: フロントエンドをビルド
+    cmds:
+      - pnpm run build
+
+  build:
+    desc: すべてをビルド
+    deps: [build:backend, build:frontend]
+
+  # クリーンアップ
+  clean:
+    desc: ビルド成果物を削除
+    cmds:
+      - rm -rf bin/
+      - rm -rf tmp/
+      - rm -rf web/dist/
+      - rm -rf web/src/api/generated/
+      - rm -rf internal/infrastructure/dao/
+      - rm -rf web/coverage/
+      - rm -f coverage.out
+      - rm -f build-errors.log
+
+  # テスト関連
+  test:
+    desc: すべてのテストを実行
+    deps: [test:backend, test:frontend]
+
+  test:backend:
+    desc: バックエンドのテストを実行
+    cmds:
+      - go test -v -race ./...
+
+  test:frontend:
+    desc: フロントエンドのテストを実行
+    cmds:
+      - pnpm run test -- --run
+
+  test:coverage:
+    desc: カバレッジ付きでテストを実行
+    cmds:
+      - go test -v -race -coverprofile=coverage.out -covermode=atomic ./...
+      - pnpm run test:coverage -- --run
+
+  test:watch:
+    desc: ウォッチモードでフロントエンドテストを実行
+    cmds:
+      - pnpm run test
+
+  # リント・フォーマット関連
+  lint:
+    desc: golangci-lintを実行
+    cmds:
+      - cmd: which golangci-lint > /dev/null || (echo "golangci-lintがインストールされていません。インストール: https://golangci-lint.run/welcome/install/" && exit 1)
+      - golangci-lint run --timeout=5m
+
+  fmt:
+    desc: gofmtとgoimportsでコードをフォーマット
+    cmds:
+      - gofmt -s -w .
+      - go install golang.org/x/tools/cmd/goimports@latest
+      - goimports -w .
+
+  vet:
+    desc: go vetを実行
+    cmds:
+      - go vet ./...
+
+  check:fmt:
+    desc: フォーマットチェック（CI用）
+    cmds:
+      - |
+        if [ -n "$(gofmt -l .)" ]; then
+          echo "以下のファイルがgofmtでフォーマットされていません:"
+          gofmt -l .
+          exit 1
+        fi
+
+  check:imports:
+    desc: goimportsチェック（CI用）
+    cmds:
+      - go install golang.org/x/tools/cmd/goimports@latest
+      - |
+        if [ -n "$(goimports -l .)" ]; then
+          echo "以下のファイルがgoimportsでフォーマットされていません:"
+          goimports -l .
+          exit 1
+        fi
+
+  modernize:
+    desc: modernize analyzerでコードを自動修正
+    cmds:
+      - echo "modernize analyzerを実行してコードを現代化します..."
+      - go run golang.org/x/tools/gopls/internal/analysis/modernize/cmd/modernize@latest -fix -test ./...
+
+  modernize:check:
+    desc: modernize analyzerでチェックのみ実行
+    cmds:
+      - echo "modernize analyzerでチェック中..."
+      - go run golang.org/x/tools/gopls/internal/analysis/modernize/cmd/modernize@latest ./...
+
+  # CI関連
+  ci:test:
+    desc: CI用のすべてのチェックを実行
+    deps: [lint, vet, check:fmt, check:imports, modernize:check, test:backend]
+    cmds:
+      - echo "すべてのチェックが完了しました"
+
+  # 開発フロー全体
+  dev:all:
+    desc: 開発環境を一括起動（DB + バックエンド + フロントエンド）
+    cmds:
+      - echo "開発環境の起動手順："
+      - echo "  1. task docker:up      # PostgreSQLを起動"
+      - echo "  2. task db:migrate     # データベースマイグレーション"
+      - echo "  3. task dev:backend    # バックエンドを起動（別ターミナル）"
+      - echo "  4. task dev:frontend   # フロントエンドを起動（別ターミナル）"
+      - echo ""
+      - echo "または並列実行："
+      - echo "  task docker:up && task db:migrate"
+      - echo "  # 別ターミナルで: task dev:backend"
+      - echo "  # さらに別ターミナルで: task dev:frontend"
