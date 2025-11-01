@@ -29,8 +29,8 @@ pkg/generated/
 coverage.out
 web/coverage/
 
-# GitHub Actions (requires workflow permission to commit)
-.github/workflows/
+# GitHub workflows (cannot be pushed by GitHub App without workflows permission)
+.github/
 
 # IDE
 .vscode/

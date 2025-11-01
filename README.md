@@ -72,11 +72,27 @@ GolangのWebサーバー（DDD構成）+ Vite React + OpenAPI + Orvalを使用�
 ## セットアップ
 
 ### 前提条件
-- Go 1.21+
-- Node.js 18+
+- Go 1.25+
+- Node.js 24+
 - pnpm
 - Docker & Docker Compose
 - psqldef (sqldef)
+- mise (推奨) - バージョン管理ツール
+
+### バージョン管理 (mise)
+
+このプロジェクトでは、開発環境のバージョンを統一するために [mise](https://mise.jdx.dev/) を使用することを推奨します。
+
+mise を使用する場合、プロジェクトディレクトリで以下を実行するだけで必要なツールがインストールされます：
+
+```bash
+mise install
+```
+
+これにより、`.mise.toml` で定義された以下のバージョンが自動的にインストールされます：
+- Go 1.25.3
+- Node.js 24.11.0 (Krypton LTS)
+- pnpm 10.20.0
 
 ### インストール
 
@@ -526,9 +542,12 @@ make test-coverage
 
 GitHub Actionsを使用した自動テスト：
 
-- **バックエンドテスト**: Go 1.21でテスト実行、カバレッジレポート生成
-- **フロントエンドテスト**: Node.js 20 + pnpmでテスト実行、カバレッジレポート生成
-- **Lint**: golangci-lintによる静的解析
+- **バージョン管理**: mise-actionを使用して `.mise.toml` からツールバージョンを自動読み込み
+- **バックエンドテスト**: Goテスト実行、カバレッジレポート生成（PostgreSQL付き）
+- **バックエンドLint**: golangci-lintによる静的解析
+- **フロントエンドテスト**: Vitestでテスト実行、カバレッジレポート生成
+- **フロントエンドLint**: ESLint + Prettierによるコード品質チェック
+- **フロントエンドビルド**: 本番ビルドの検証
 
 ワークフローファイル: `.github/workflows/ci.yml`
 

@@ -1,0 +1,14 @@
+# mise configuration file
+# Manages tool versions for this project
+
+[tools]
+# Backend
+go = "1.25.3"
+
+# Frontend
+node = "24.11.0"
+pnpm = "10.20.0"
+
+[settings]
+# Automatically activate when entering this directory
+auto_install = true
