@@ -1,0 +1,6 @@
+packageName: openapi
+outputDir: ./pkg/generated
+generateInterfaces: true
+generateModels: true
+enumClassPrefix: true
+structPrefix: true
