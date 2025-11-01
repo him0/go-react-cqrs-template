@@ -45,21 +45,31 @@ tasks:
     status:
       - which air
 
-  # Docker関連
-  docker:up:
-    desc: Dockerコンテナを起動
+  # Podman関連
+  podman:up:
+    desc: Podmanコンテナを起動
     cmds:
-      - docker-compose up -d
+      - podman-compose up -d
 
-  docker:down:
-    desc: Dockerコンテナを停止
+  podman:down:
+    desc: Podmanコンテナを停止
     cmds:
-      - docker-compose down
+      - podman-compose down
 
-  docker:logs:
-    desc: Dockerログを表示
+  podman:logs:
+    desc: Podmanログを表示
     cmds:
-      - docker-compose logs -f
+      - podman-compose logs -f
+
+  podman:ps:
+    desc: Podmanコンテナの状態を表示
+    cmds:
+      - podman-compose ps
+
+  podman:restart:
+    desc: Podmanコンテナを再起動
+    cmds:
+      - podman-compose restart
 
   # データベース関連
   db:migrate:
@@ -255,12 +265,12 @@ tasks:
     desc: 開発環境を一括起動（DB + バックエンド + フロントエンド）
     cmds:
       - echo "開発環境の起動手順："
-      - echo "  1. task docker:up      # PostgreSQLを起動"
+      - echo "  1. task podman:up      # PostgreSQLを起動"
       - echo "  2. task db:migrate     # データベースマイグレーション"
       - echo "  3. task dev:backend    # バックエンドを起動（別ターミナル）"
       - echo "  4. task dev:frontend   # フロントエンドを起動（別ターミナル）"
       - echo ""
       - echo "または並列実行："
-      - echo "  task docker:up && task db:migrate"
+      - echo "  task podman:up && task db:migrate"
       - echo "  # 別ターミナルで: task dev:backend"
       - echo "  # さらに別ターミナルで: task dev:frontend"

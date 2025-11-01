@@ -83,7 +83,7 @@ GolangのWebサーバー（DDD構成）+ Vite React + OpenAPI + Orvalを使用�
 - Go 1.25+
 - Node.js 24+
 - pnpm
-- Docker & Docker Compose
+- Podman & podman-compose
 - mise (推奨) - バージョン管理ツール
 - Air (推奨) - Golangのホットリロードツール
 - Task (推奨) - Makefileの代替タスクランナー
@@ -173,11 +173,9 @@ pnpm install
 
 ### データベースのセットアップ
 
-1. PostgreSQLをDockerで起動:
+1. PostgreSQLをPodmanで起動:
 ```bash
-task docker:up
-# または
-make docker-up
+task podman:up
 ```
 
 2. データベースマイグレーションを実行:
@@ -192,6 +190,22 @@ make db-migrate
 task db:dry-run
 # または
 make db-dry-run
+```
+
+### その他のコマンド
+
+```bash
+# コンテナの状態を確認
+task podman:ps
+
+# ログを表示
+task podman:logs
+
+# コンテナを再起動
+task podman:restart
+
+# コンテナを停止
+task podman:down
 ```
 
 ### マイグレーションファイルの生成（差分管理）
@@ -297,9 +311,7 @@ pnpm run generate:api
 
 1. PostgreSQLを起動:
 ```bash
-task docker:up
-# または
-make docker-up
+task podman:up
 ```
 
 2. データベースマイグレーション:
@@ -332,11 +344,13 @@ pnpm run dev
 
 1. PostgreSQLを起動:
 ```bash
-make docker-up
+task podman:up
 ```
 
 2. データベースマイグレーション:
 ```bash
+task db:migrate
+# または
 make db-migrate
 ```
 
