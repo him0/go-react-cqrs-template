@@ -1,4 +1,4 @@
-.PHONY: help install run-backend run-frontend generate-api build clean test test-backend test-frontend test-coverage docker-up docker-down docker-logs db-migrate db-dry-run setup
+.PHONY: help install run-backend run-frontend generate-api build clean test test-backend test-frontend test-coverage docker-up docker-down docker-logs db-migrate db-dry-run setup lint fmt vet check-fmt check-imports ci-test
 
 help: ## ヘルプを表示
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
@@ -72,3 +72,33 @@ test-coverage: ## カバレッジ付きでテストを実行
 
 test-watch: ## ウォッチモードでフロントエンドテストを実行
 	cd web && pnpm run test
+
+lint: ## golangci-lintを実行
+	@which golangci-lint > /dev/null || (echo "golangci-lintがインストールされていません。インストール: https://golangci-lint.run/welcome/install/" && exit 1)
+	golangci-lint run --timeout=5m
+
+fmt: ## gofmtでコードをフォーマット
+	gofmt -s -w .
+	go install golang.org/x/tools/cmd/goimports@latest
+	goimports -w .
+
+vet: ## go vetを実行
+	go vet ./...
+
+check-fmt: ## フォーマットチェック（CI用）
+	@if [ -n "$$(gofmt -l .)" ]; then \
+		echo "以下のファイルがgofmtでフォーマットされていません:"; \
+		gofmt -l .; \
+		exit 1; \
+	fi
+
+check-imports: ## goimportsチェック（CI用）
+	@go install golang.org/x/tools/cmd/goimports@latest
+	@if [ -n "$$(goimports -l .)" ]; then \
+		echo "以下のファイルがgoimportsでフォーマットされていません:"; \
+		goimports -l .; \
+		exit 1; \
+	fi
+
+ci-test: lint vet check-fmt check-imports test-backend ## CI用のすべてのチェックを実行
+	@echo "すべてのチェックが完了しました"
