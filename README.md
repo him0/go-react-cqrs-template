@@ -362,6 +362,82 @@ function UserList() {
 
 開発時はReact Query Devtoolsが自動的に有効になり、クエリの状態を確認できます。
 
+## テスト
+
+このプロジェクトには包括的なテストスイートが含まれています。
+
+### すべてのテストを実行
+
+```bash
+make test
+```
+
+### バックエンドテスト
+
+Goのテストフレームワークを使用：
+
+```bash
+# テストを実行
+make test-backend
+
+# または直接
+go test -v ./...
+
+# カバレッジ付き
+go test -v -race -coverprofile=coverage.out -covermode=atomic ./...
+```
+
+**テストファイル:**
+- `internal/domain/user_test.go` - ドメインロジックのテスト
+- `internal/application/user_service_test.go` - アプリケーションサービスのテスト
+- `internal/infrastructure/inmemory_user_repository_test.go` - リポジトリのテスト
+
+### フロントエンドテスト
+
+Vitest + React Testing Libraryを使用：
+
+```bash
+# テストを実行
+make test-frontend
+
+# または直接
+cd web
+pnpm run test
+
+# カバレッジ付き
+pnpm run test:coverage
+
+# UIモード（インタラクティブ）
+pnpm run test:ui
+
+# ウォッチモード
+make test-watch
+```
+
+**テストファイル:**
+- `web/src/lib/utils.test.ts` - ユーティリティ関数のテスト
+- `web/src/components/Button.test.tsx` - コンポーネントのテスト
+
+### カバレッジレポート
+
+```bash
+make test-coverage
+```
+
+カバレッジレポートは以下に生成されます：
+- バックエンド: `coverage.out`
+- フロントエンド: `web/coverage/`
+
+### CI/CD
+
+GitHub Actionsを使用した自動テスト：
+
+- **バックエンドテスト**: Go 1.21でテスト実行、カバレッジレポート生成
+- **フロントエンドテスト**: Node.js 20 + pnpmでテスト実行、カバレッジレポート生成
+- **Lint**: golangci-lintによる静的解析
+
+ワークフローファイル: `.github/workflows/ci.yml`
+
 ## ビルド
 
 ### バックエンド

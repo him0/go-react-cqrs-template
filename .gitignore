@@ -24,6 +24,10 @@ web/src/api/generated/
 web/src/routeTree.gen.ts
 pkg/generated/
 
+# Test coverage
+coverage.out
+web/coverage/
+
 # IDE
 .vscode/
 .idea/
