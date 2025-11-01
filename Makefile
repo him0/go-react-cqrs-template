@@ -1,11 +1,31 @@
-.PHONY: help install run-backend run-frontend generate-api build clean test test-backend test-frontend test-coverage
+.PHONY: help install run-backend run-frontend generate-api build clean test test-backend test-frontend test-coverage docker-up docker-down docker-logs db-migrate db-dry-run setup
 
 help: ## ヘルプを表示
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
 
+setup: ## 開発環境のセットアップ
+	go mod download
+	go install github.com/sqldef/sqldef/cmd/psqldef@latest
+	cd web && pnpm install
+
 install: ## 依存関係をインストール
 	go mod download
 	cd web && pnpm install
+
+docker-up: ## Dockerコンテナを起動
+	docker-compose up -d
+
+docker-down: ## Dockerコンテナを停止
+	docker-compose down
+
+docker-logs: ## Dockerログを表示
+	docker-compose logs -f
+
+db-migrate: ## psqldefを使用してデータベースマイグレーションを実行
+	psqldef -U postgres -p 5432 -h localhost app_db --password=postgres --file=db/schema/schema.sql
+
+db-dry-run: ## データベースマイグレーションのドライラン
+	psqldef -U postgres -p 5432 -h localhost app_db --password=postgres --file=db/schema/schema.sql --dry-run
 
 run-backend: ## バックエンドサーバーを起動
 	go run cmd/server/main.go
@@ -32,9 +52,11 @@ clean: ## ビルド成果物を削除
 	rm -f coverage.out
 
 dev: ## 開発環境を起動（バックエンド + フロントエンド）
-	@echo "バックエンドとフロントエンドを別々のターミナルで起動してください："
-	@echo "  ターミナル1: make run-backend"
-	@echo "  ターミナル2: make run-frontend"
+	@echo "開発環境の起動手順："
+	@echo "  1. make docker-up   # PostgreSQLを起動"
+	@echo "  2. make db-migrate  # データベースマイグレーション"
+	@echo "  3. make run-backend # バックエンドを起動（別ターミナル）"
+	@echo "  4. make run-frontend # フロントエンドを起動（別ターミナル）"
 
 test: test-backend test-frontend ## すべてのテストを実行
 

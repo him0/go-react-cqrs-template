@@ -3,24 +3,43 @@ package main
 import (
 	"log"
 	"net/http"
+	"os"
 
-	"github.com/example/go-vite-spec-kit-sample/internal/application"
+	"github.com/example/go-vite-spec-kit-sample/internal/command"
+	"github.com/example/go-vite-spec-kit-sample/internal/handler"
 	"github.com/example/go-vite-spec-kit-sample/internal/infrastructure"
-	httphandler "github.com/example/go-vite-spec-kit-sample/internal/interfaces/http"
+	"github.com/example/go-vite-spec-kit-sample/internal/queryservice"
+	"github.com/example/go-vite-spec-kit-sample/internal/usecase"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
 )
 
 func main() {
-	// リポジトリの初期化
-	userRepo := infrastructure.NewInMemoryUserRepository()
+	// データベース接続設定
+	dbConfig := infrastructure.Config{
+		Host:     getEnv("DB_HOST", "localhost"),
+		Port:     5432,
+		User:     getEnv("DB_USER", "postgres"),
+		Password: getEnv("DB_PASSWORD", "postgres"),
+		DBName:   getEnv("DB_NAME", "app_db"),
+		SSLMode:  getEnv("DB_SSLMODE", "disable"),
+	}
 
-	// サービスの初期化
-	userService := application.NewUserService(userRepo)
+	// データベース接続
+	db, err := infrastructure.NewDB(dbConfig)
+	if err != nil {
+		log.Fatalf("Failed to connect to database: %v", err)
+	}
+	defer db.Close()
 
-	// ハンドラーの初期化
-	userHandler := httphandler.NewUserHandler(userService)
+	log.Println("Successfully connected to database")
+
+	// 各層の初期化
+	userCommand := command.NewUserCommand(db)
+	userQueryService := queryservice.NewUserQueryService(db)
+	userUsecase := usecase.NewUserUsecase(userCommand, userQueryService)
+	userHandler := handler.NewUserHandler(userUsecase)
 
 	// ルーターの設定
 	r := chi.NewRouter()
@@ -51,8 +70,18 @@ func main() {
 	})
 
 	// サーバー起動
-	log.Println("Server starting on :8080")
-	if err := http.ListenAndServe(":8080", r); err != nil {
+	port := getEnv("PORT", "8080")
+	log.Printf("Server starting on :%s", port)
+	if err := http.ListenAndServe(":"+port, r); err != nil {
 		log.Fatal(err)
 	}
+}
+
+// getEnv 環境変数を取得、なければデフォルト値を返す
+func getEnv(key, defaultValue string) string {
+	value := os.Getenv(key)
+	if value == "" {
+		return defaultValue
+	}
+	return value
 }

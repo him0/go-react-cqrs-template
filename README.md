@@ -5,11 +5,15 @@ GolangのWebサーバー（DDD構成）+ Vite React + OpenAPI + Orvalを使用�
 ## 構成
 
 ### バックエンド (Go)
-- **アーキテクチャ**: Domain-Driven Design (DDD)
-  - `domain`: ドメイン層（エンティティ、値オブジェクト、リポジトリインターフェース）
-  - `application`: アプリケーション層（ユースケース、サービス）
-  - `infrastructure`: インフラ層（リポジトリ実装）
-  - `interfaces`: インターフェース層（HTTPハンドラー）
+- **アーキテクチャ**: Domain-Driven Design (DDD) + CQRS
+  - `domain`: ドメイン層（エンティティ、ビジネスロジック）
+  - `command`: コマンド層（書き込み操作：Create, Update, Delete）
+  - `queryservice`: クエリサービス層（読み取り操作：Read）
+  - `usecase`: ユースケース層（アプリケーションロジック）
+  - `handler`: ハンドラー層（HTTPリクエスト処理）
+  - `infrastructure`: インフラ層（データベース接続、外部サービス連携）
+- **データベース**: PostgreSQL
+- **スキーマ管理**: sqldef (psqldef)
 - **ルーター**: chi
 - **API仕様**: OpenAPI 3.0
 
@@ -36,16 +40,22 @@ GolangのWebサーバー（DDD構成）+ Vite React + OpenAPI + Orvalを使用�
 ├── cmd/
 │   └── server/            # アプリケーションエントリーポイント
 │       └── main.go
+├── db/
+│   └── schema/            # データベーススキーマ
+│       └── schema.sql
 ├── internal/
 │   ├── domain/            # ドメイン層
 │   │   └── user.go
-│   ├── application/       # アプリケーション層
-│   │   └── user_service.go
-│   ├── infrastructure/    # インフラ層
-│   │   └── inmemory_user_repository.go
-│   └── interfaces/        # インターフェース層
-│       └── http/
-│           └── user_handler.go
+│   ├── command/           # コマンド層（書き込み操作）
+│   │   └── user_command.go
+│   ├── queryservice/      # クエリサービス層（読み取り操作）
+│   │   └── user_query_service.go
+│   ├── usecase/           # ユースケース層
+│   │   └── user_usecase.go
+│   ├── handler/           # ハンドラー層
+│   │   └── user_handler.go
+│   └── infrastructure/    # インフラ層
+│       └── database.go
 ├── web/                   # フロントエンド
 │   ├── src/
 │   │   ├── api/          # Orvalで生成されたAPIコード
@@ -65,18 +75,45 @@ GolangのWebサーバー（DDD構成）+ Vite React + OpenAPI + Orvalを使用�
 - Go 1.21+
 - Node.js 18+
 - pnpm
+- Docker & Docker Compose
+- psqldef (sqldef)
 
 ### インストール
 
-1. Goの依存関係をインストール:
+1. すべての依存関係をインストール（Go、フロントエンド、psqldef）:
 ```bash
-go mod download
+make setup
 ```
 
-2. フロントエンドの依存関係をインストール:
+または個別にインストール:
+
 ```bash
+# Goの依存関係
+go mod download
+
+# psqldefのインストール
+go install github.com/sqldef/sqldef/cmd/psqldef@latest
+
+# フロントエンドの依存関係
 cd web
 pnpm install
+```
+
+### データベースのセットアップ
+
+1. PostgreSQLをDockerで起動:
+```bash
+make docker-up
+```
+
+2. データベースマイグレーションを実行:
+```bash
+make db-migrate
+```
+
+マイグレーションをドライランで確認する場合:
+```bash
+make db-dry-run
 ```
 
 ### コード生成
@@ -99,18 +136,50 @@ pnpm run generate:api
 
 ## 開発
 
-### バックエンド起動
+### 開発環境の起動手順
+
+1. PostgreSQLを起動:
 ```bash
+make docker-up
+```
+
+2. データベースマイグレーション:
+```bash
+make db-migrate
+```
+
+3. バックエンド起動（別ターミナル）:
+```bash
+make run-backend
+# または
 go run cmd/server/main.go
 ```
 サーバーは http://localhost:8080 で起動します。
 
-### フロントエンド起動
+4. フロントエンド起動（別ターミナル）:
 ```bash
-cd web
-pnpm run dev
+make run-frontend
+# または
+cd web && pnpm run dev
 ```
 開発サーバーは http://localhost:3000 で起動します。
+
+### 環境変数
+
+環境変数は`.env`ファイルで設定できます（`.env.example`を参照）:
+
+```bash
+# Database Configuration
+DB_HOST=localhost
+DB_PORT=5432
+DB_USER=postgres
+DB_PASSWORD=postgres
+DB_NAME=app_db
+DB_SSLMODE=disable
+
+# Server Configuration
+PORT=8080
+```
 
 ## API エンドポイント
 
@@ -136,27 +205,43 @@ curl -X POST http://localhost:8080/api/v1/users \
 curl http://localhost:8080/api/v1/users?limit=10&offset=0
 ```
 
-## DDD レイヤーの説明
+## アーキテクチャの詳細
 
-### Domain層 (`internal/domain`)
+このアプリケーションはDDD（ドメイン駆動設計）とCQRS（コマンドクエリ責務分離）パターンを採用しています。
+
+詳細なアーキテクチャガイドは [README_ARCHITECTURE.md](./README_ARCHITECTURE.md) を参照してください。
+
+### 各層の概要
+
+#### Domain層 (`internal/domain`)
 - ビジネスロジックの中核
-- エンティティ、値オブジェクト、リポジトリインターフェースを定義
+- エンティティとビジネスルールの定義
 - 他の層に依存しない
 
-### Application層 (`internal/application`)
-- ユースケースの実装
-- ドメインオブジェクトを組み合わせてビジネスフローを実現
-- トランザクション境界を定義
+#### Command層 (`internal/command`)
+- **書き込み操作**（Create, Update, Delete）を担当
+- データベースへの永続化を実行
+- トランザクション管理
 
-### Infrastructure層 (`internal/infrastructure`)
-- 外部システムとのインターフェース実装
-- データベース、外部API、ファイルシステムなど
-- リポジトリインターフェースの具体実装
+#### QueryService層 (`internal/queryservice`)
+- **読み取り操作**（Read）を担当
+- データベースからのクエリ実行
+- ページネーションやフィルタリング
 
-### Interface層 (`internal/interfaces`)
-- 外部からのリクエストを受け付ける
-- HTTPハンドラー、CLIコマンドなど
-- リクエストのバリデーション、レスポンスの整形
+#### Usecase層 (`internal/usecase`)
+- ビジネスユースケースの実装
+- CommandとQueryServiceを組み合わせて使用
+- ビジネスルールの適用（重複チェックなど）
+
+#### Handler層 (`internal/handler`)
+- HTTPリクエスト・レスポンスの処理
+- リクエストのバリデーション
+- JSONのシリアライズ・デシリアライズ
+
+#### Infrastructure層 (`internal/infrastructure`)
+- データベース接続
+- 外部サービスとの連携
+- 技術的な詳細の実装
 
 ## Orval の使い方
 
