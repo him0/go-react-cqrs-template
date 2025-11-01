@@ -14,21 +14,17 @@ const createTestQueryClient = () =>
     },
   })
 
-export function renderWithProviders(
-  ui: ReactElement,
-  options?: Omit<RenderOptions, 'wrapper'>
-) {
+export function renderWithProviders(ui: ReactElement, options?: Omit<RenderOptions, 'wrapper'>) {
   const testQueryClient = createTestQueryClient()
 
   return render(ui, {
     wrapper: ({ children }) => (
-      <QueryClientProvider client={testQueryClient}>
-        {children}
-      </QueryClientProvider>
+      <QueryClientProvider client={testQueryClient}>{children}</QueryClientProvider>
     ),
     ...options,
   })
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export * from '@testing-library/react'
 export { renderWithProviders as render }

@@ -1,25 +1,25 @@
-import Axios, { AxiosRequestConfig } from 'axios';
+import Axios, { AxiosRequestConfig } from 'axios'
 
 export const AXIOS_INSTANCE = Axios.create({
   baseURL: '/api/v1',
   headers: {
     'Content-Type': 'application/json',
   },
-});
+})
 
 export const customInstance = <T>(config: AxiosRequestConfig): Promise<T> => {
-  const source = Axios.CancelToken.source();
+  const source = Axios.CancelToken.source()
   const promise = AXIOS_INSTANCE({
     ...config,
     cancelToken: source.token,
-  }).then(({ data }) => data);
+  }).then(({ data }) => data)
 
-  // @ts-ignore
+  // @ts-expect-error - Adding cancel method to promise
   promise.cancel = () => {
-    source.cancel('Query was cancelled');
-  };
+    source.cancel('Query was cancelled')
+  }
 
-  return promise;
-};
+  return promise
+}
 
-export default customInstance;
+export default customInstance

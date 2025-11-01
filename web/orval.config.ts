@@ -1,4 +1,4 @@
-import { defineConfig } from 'orval';
+import { defineConfig } from 'orval'
 
 export default defineConfig({
   api: {
@@ -23,4 +23,4 @@ export default defineConfig({
       afterAllFilesWrite: 'prettier --write',
     },
   },
-});
+})

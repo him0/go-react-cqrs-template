@@ -9,9 +9,7 @@ function About() {
     <div className="max-w-3xl mx-auto space-y-6">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">About</h1>
-        <p className="text-muted-foreground mt-2">
-          Learn more about this project
-        </p>
+        <p className="text-muted-foreground mt-2">Learn more about this project</p>
       </div>
 
       <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-6 space-y-4">
