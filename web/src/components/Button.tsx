@@ -5,13 +5,9 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   size?: 'sm' | 'md' | 'lg'
 }
 
-export function Button({
-  className,
-  variant = 'default',
-  size = 'md',
-  ...props
-}: ButtonProps) {
-  const baseStyles = 'inline-flex items-center justify-center rounded-md font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 disabled:pointer-events-none disabled:opacity-50'
+export function Button({ className, variant = 'default', size = 'md', ...props }: ButtonProps) {
+  const baseStyles =
+    'inline-flex items-center justify-center rounded-md font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 disabled:pointer-events-none disabled:opacity-50'
 
   const variants = {
     default: 'bg-primary text-primary-foreground hover:bg-primary/90',
@@ -25,10 +21,5 @@ export function Button({
     lg: 'h-11 px-8',
   }
 
-  return (
-    <button
-      className={cn(baseStyles, variants[variant], sizes[size], className)}
-      {...props}
-    />
-  )
+  return <button className={cn(baseStyles, variants[variant], sizes[size], className)} {...props} />
 }
