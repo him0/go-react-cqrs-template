@@ -14,7 +14,7 @@ fi
 
 # Generate Go server code
 openapi-generator-cli generate \
-  -i api/openapi.yaml \
+  -i openapi/openapi.yaml \
   -g go-server \
   -o pkg/generated \
   --additional-properties=packageName=openapi,router=chi,sourceFolder=.

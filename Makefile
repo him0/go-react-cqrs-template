@@ -9,11 +9,11 @@ setup: ## 開発環境のセットアップ
 	go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
 	go install golang.org/x/tools/gopls/internal/analysis/modernize/cmd/modernize@latest
 	go install golang.org/x/tools/cmd/goimports@latest
-	cd web && pnpm install
+	pnpm install
 
 install: ## 依存関係をインストール
 	go mod download
-	cd web && pnpm install
+	pnpm install
 
 install-tools: ## tools.goに定義されたツールをインストール
 	@echo "Installing tools from tools.go..."
@@ -59,10 +59,10 @@ run-backend: ## バックエンドサーバーを起動
 	go run cmd/server/main.go
 
 run-frontend: ## フロントエンド開発サーバーを起動
-	cd web && pnpm run dev
+	pnpm run dev
 
 generate-api: ## APIコードを生成（フロントエンド）
-	cd web && pnpm run generate:api
+	pnpm run generate:api
 
 generate-dao: ## DAOコードをsqlcで生成
 	@which sqlc > /dev/null || go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
@@ -72,7 +72,7 @@ build-backend: ## バックエンドをビルド
 	go build -o bin/server cmd/server/main.go
 
 build-frontend: ## フロントエンドをビルド
-	cd web && pnpm run build
+	pnpm run build
 
 build: build-backend build-frontend ## すべてをビルド
 
@@ -97,14 +97,14 @@ test-backend: ## バックエンドのテストを実行
 	go test -v -race ./...
 
 test-frontend: ## フロントエンドのテストを実行
-	cd web && pnpm run test -- --run
+	pnpm run test -- --run
 
 test-coverage: ## カバレッジ付きでテストを実行
 	go test -v -race -coverprofile=coverage.out -covermode=atomic ./...
-	cd web && pnpm run test:coverage -- --run
+	pnpm run test:coverage -- --run
 
 test-watch: ## ウォッチモードでフロントエンドテストを実行
-	cd web && pnpm run test
+	pnpm run test
 
 lint: ## golangci-lintを実行
 	@which golangci-lint > /dev/null || (echo "golangci-lintがインストールされていません。インストール: https://golangci-lint.run/welcome/install/" && exit 1)

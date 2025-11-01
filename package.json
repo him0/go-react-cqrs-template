@@ -1,0 +1,18 @@
+{
+  "name": "go-react-spec-kit-sample",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm --filter web dev",
+    "build": "pnpm --filter web build",
+    "preview": "pnpm --filter web preview",
+    "generate:api": "pnpm --filter web generate:api",
+    "test": "pnpm --filter web test",
+    "test:ui": "pnpm --filter web test:ui",
+    "test:coverage": "pnpm --filter web test:coverage",
+    "lint": "pnpm --filter web lint",
+    "lint:fix": "pnpm --filter web lint:fix",
+    "format": "pnpm --filter web format",
+    "format:check": "pnpm --filter web format:check"
+  }
+}
