@@ -50,18 +50,18 @@ tasks:
   db:migrate:
     desc: psqldefを使用してデータベースマイグレーションを実行
     cmds:
-      - go tool psqldef -U {{.DB_USER}} -p {{.DB_PORT}} -h {{.DB_HOST}} {{.DB_NAME}} --password={{.DB_PASSWORD}} --file=db/schema/schema.sql
+      - psqldef -U {{.DB_USER}} -p {{.DB_PORT}} -h {{.DB_HOST}} {{.DB_NAME}} --password={{.DB_PASSWORD}} --file=db/schema/schema.sql
 
   db:dry-run:
     desc: データベースマイグレーションのドライラン
     cmds:
-      - go tool psqldef -U {{.DB_USER}} -p {{.DB_PORT}} -h {{.DB_HOST}} {{.DB_NAME}} --password={{.DB_PASSWORD}} --file=db/schema/schema.sql --dry-run
+      - psqldef -U {{.DB_USER}} -p {{.DB_PORT}} -h {{.DB_HOST}} {{.DB_NAME}} --password={{.DB_PASSWORD}} --file=db/schema/schema.sql --dry-run
 
   db:export:
     desc: 現在のDBスキーマをエクスポート
     cmds:
       - echo "Exporting current database schema..."
-      - go tool psqldef -U {{.DB_USER}} -p {{.DB_PORT}} -h {{.DB_HOST}} {{.DB_NAME}} --password={{.DB_PASSWORD}} --export
+      - psqldef -U {{.DB_USER}} -p {{.DB_PORT}} -h {{.DB_HOST}} {{.DB_NAME}} --password={{.DB_PASSWORD}} --export
 
   db:generate-migration:
     desc: スキーマ変更からマイグレーションファイルを生成
@@ -73,7 +73,7 @@ tasks:
         fi
         TIMESTAMP=$(date +%Y%m%d%H%M%S)
         FILENAME="db/migrations/${TIMESTAMP}_{{.NAME}}.sql"
-        go tool psqldef -U {{.DB_USER}} -p {{.DB_PORT}} -h {{.DB_HOST}} {{.DB_NAME}} --password={{.DB_PASSWORD}} --file=db/schema/schema.sql --dry-run > ${FILENAME}
+        psqldef -U {{.DB_USER}} -p {{.DB_PORT}} -h {{.DB_HOST}} {{.DB_NAME}} --password={{.DB_PASSWORD}} --file=db/schema/schema.sql --dry-run > ${FILENAME}
         if [ -s ${FILENAME} ]; then
           echo "Migration file created: ${FILENAME}"
           cat ${FILENAME}
@@ -107,7 +107,7 @@ tasks:
   generate:dao:
     desc: DAOコードをsqlcで生成
     cmds:
-      - go tool sqlc generate
+      - sqlc generate
 
   # ビルド関連
   build:backend:
@@ -174,7 +174,7 @@ tasks:
     desc: gofmtとgoimportsでコードをフォーマット
     cmds:
       - gofmt -s -w .
-      - go tool goimports -w .
+      - goimports -w .
 
   vet:
     desc: go vetを実行
@@ -195,9 +195,9 @@ tasks:
     desc: goimportsチェック（CI用）
     cmds:
       - |
-        if [ -n "$(go tool goimports -l .)" ]; then
+        if [ -n "$(goimports -l .)" ]; then
           echo "以下のファイルがgoimportsでフォーマットされていません:"
-          go tool goimports -l .
+          goimports -l .
           exit 1
         fi
 
@@ -205,13 +205,13 @@ tasks:
     desc: modernize analyzerでコードを自動修正
     cmds:
       - echo "modernize analyzerを実行してコードを現代化します..."
-      - go run golang.org/x/tools/gopls/internal/analysis/modernize/cmd/modernize@latest -fix -test ./...
+      - modernize -fix -test ./...
 
   modernize:check:
     desc: modernize analyzerでチェックのみ実行
     cmds:
       - echo "modernize analyzerでチェック中..."
-      - go run golang.org/x/tools/gopls/internal/analysis/modernize/cmd/modernize@latest ./...
+      - modernize ./...
 
   # CI関連
   ci:test:

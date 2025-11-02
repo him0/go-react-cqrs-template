@@ -7,6 +7,12 @@ go = "1.25.3"
 "go:github.com/air-verse/air" = "latest"
 "go:github.com/go-task/task/v3/cmd/task" = "latest"
 
+# Development tools (previously managed by go.mod tool directive)
+"go:github.com/sqlc-dev/sqlc/cmd/sqlc" = "latest"
+"go:github.com/sqldef/sqldef/cmd/psqldef" = "latest"
+"go:golang.org/x/tools/cmd/goimports" = "latest"
+"go:golang.org/x/tools/gopls/internal/analysis/modernize/cmd/modernize" = "latest"
+
 # Frontend
 node = "24.11.0"
 pnpm = "10.20.0"

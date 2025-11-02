@@ -70,10 +70,3 @@ require (
 	modernc.org/memory v1.11.0 // indirect
 	modernc.org/sqlite v1.38.2 // indirect
 )
-
-tool (
-	github.com/sqlc-dev/sqlc/cmd/sqlc
-	github.com/sqldef/sqldef/cmd/psqldef
-	golang.org/x/tools/cmd/goimports
-	golang.org/x/tools/gopls/internal/analysis/modernize/cmd/modernize
-)
