@@ -14,36 +14,11 @@ tasks:
       - task --list
 
   # セットアップ関連
-  setup:
-    desc: 開発環境のセットアップ
-    cmds:
-      - go mod download
-      - go install github.com/sqldef/sqldef/cmd/psqldef@latest
-      - go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
-      - go install golang.org/x/tools/gopls/internal/analysis/modernize/cmd/modernize@latest
-      - go install golang.org/x/tools/cmd/goimports@latest
-      - go install github.com/air-verse/air@latest
-      - go install github.com/go-task/task/v3/cmd/task@latest
-      - pnpm install
-
   install:
     desc: 依存関係をインストール
     cmds:
       - go mod download
       - pnpm install
-
-  install-tools:
-    desc: tools.goに定義されたツールをインストール
-    cmds:
-      - echo "Installing tools from tools.go..."
-      - cat tools.go | grep _ | awk -F'"' '{print $2}' | xargs -I % go install %@latest
-
-  install-air:
-    desc: Airをインストール
-    cmds:
-      - go install github.com/air-verse/air@latest
-    status:
-      - which air
 
   # Podman関連
   podman:up:
@@ -75,18 +50,18 @@ tasks:
   db:migrate:
     desc: psqldefを使用してデータベースマイグレーションを実行
     cmds:
-      - psqldef -U {{.DB_USER}} -p {{.DB_PORT}} -h {{.DB_HOST}} {{.DB_NAME}} --password={{.DB_PASSWORD}} --file=db/schema/schema.sql
+      - go tool psqldef -U {{.DB_USER}} -p {{.DB_PORT}} -h {{.DB_HOST}} {{.DB_NAME}} --password={{.DB_PASSWORD}} --file=db/schema/schema.sql
 
   db:dry-run:
     desc: データベースマイグレーションのドライラン
     cmds:
-      - psqldef -U {{.DB_USER}} -p {{.DB_PORT}} -h {{.DB_HOST}} {{.DB_NAME}} --password={{.DB_PASSWORD}} --file=db/schema/schema.sql --dry-run
+      - go tool psqldef -U {{.DB_USER}} -p {{.DB_PORT}} -h {{.DB_HOST}} {{.DB_NAME}} --password={{.DB_PASSWORD}} --file=db/schema/schema.sql --dry-run
 
   db:export:
     desc: 現在のDBスキーマをエクスポート
     cmds:
       - echo "Exporting current database schema..."
-      - psqldef -U {{.DB_USER}} -p {{.DB_PORT}} -h {{.DB_HOST}} {{.DB_NAME}} --password={{.DB_PASSWORD}} --export
+      - go tool psqldef -U {{.DB_USER}} -p {{.DB_PORT}} -h {{.DB_HOST}} {{.DB_NAME}} --password={{.DB_PASSWORD}} --export
 
   db:generate-migration:
     desc: スキーマ変更からマイグレーションファイルを生成
@@ -98,7 +73,7 @@ tasks:
         fi
         TIMESTAMP=$(date +%Y%m%d%H%M%S)
         FILENAME="db/migrations/${TIMESTAMP}_{{.NAME}}.sql"
-        psqldef -U {{.DB_USER}} -p {{.DB_PORT}} -h {{.DB_HOST}} {{.DB_NAME}} --password={{.DB_PASSWORD}} --file=db/schema/schema.sql --dry-run > ${FILENAME}
+        go tool psqldef -U {{.DB_USER}} -p {{.DB_PORT}} -h {{.DB_HOST}} {{.DB_NAME}} --password={{.DB_PASSWORD}} --file=db/schema/schema.sql --dry-run > ${FILENAME}
         if [ -s ${FILENAME} ]; then
           echo "Migration file created: ${FILENAME}"
           cat ${FILENAME}
@@ -109,14 +84,7 @@ tasks:
 
   # 開発サーバー関連
   dev:
-    desc: 開発サーバーをAirで起動（ホットリロード対応）
-    deps: [install-air]
-    cmds:
-      - air
-
-  dev:backend:
-    desc: バックエンド開発サーバーをAirで起動
-    deps: [install-air]
+    desc: バックエンド開発サーバーをAirで起動（ホットリロード対応）
     cmds:
       - air
 
@@ -126,14 +94,9 @@ tasks:
       - pnpm run dev
 
   run:backend:
-    desc: バックエンドサーバーを起動（通常起動）
+    desc: バックエンドサーバーを起動（通常起動、ホットリロードなし）
     cmds:
       - go run cmd/server/main.go
-
-  run:frontend:
-    desc: フロントエンド開発サーバーを起動
-    cmds:
-      - pnpm run dev
 
   # コード生成関連
   generate:api:
@@ -144,8 +107,7 @@ tasks:
   generate:dao:
     desc: DAOコードをsqlcで生成
     cmds:
-      - cmd: which sqlc > /dev/null || go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
-      - sqlc generate
+      - go tool sqlc generate
 
   # ビルド関連
   build:backend:
@@ -212,8 +174,7 @@ tasks:
     desc: gofmtとgoimportsでコードをフォーマット
     cmds:
       - gofmt -s -w .
-      - go install golang.org/x/tools/cmd/goimports@latest
-      - goimports -w .
+      - go tool goimports -w .
 
   vet:
     desc: go vetを実行
@@ -233,11 +194,10 @@ tasks:
   check:imports:
     desc: goimportsチェック（CI用）
     cmds:
-      - go install golang.org/x/tools/cmd/goimports@latest
       - |
-        if [ -n "$(goimports -l .)" ]; then
+        if [ -n "$(go tool goimports -l .)" ]; then
           echo "以下のファイルがgoimportsでフォーマットされていません:"
-          goimports -l .
+          go tool goimports -l .
           exit 1
         fi
 
@@ -267,10 +227,10 @@ tasks:
       - echo "開発環境の起動手順："
       - echo "  1. task podman:up      # PostgreSQLを起動"
       - echo "  2. task db:migrate     # データベースマイグレーション"
-      - echo "  3. task dev:backend    # バックエンドを起動（別ターミナル）"
+      - echo "  3. task dev            # バックエンドを起動（別ターミナル）"
       - echo "  4. task dev:frontend   # フロントエンドを起動（別ターミナル）"
       - echo ""
       - echo "または並列実行："
       - echo "  task podman:up && task db:migrate"
-      - echo "  # 別ターミナルで: task dev:backend"
+      - echo "  # 別ターミナルで: task dev"
       - echo "  # さらに別ターミナルで: task dev:frontend"

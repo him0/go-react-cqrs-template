@@ -102,25 +102,24 @@ mise install
 - Go 1.25.3
 - Node.js 24.11.0 (Krypton LTS)
 - pnpm 10.20.0
+- Air (ホットリロードツール)
+- Task (タスクランナー)
 
 ### インストール
 
-1. Taskをインストール:
+1. すべての依存関係をインストール:
 ```bash
-go install github.com/go-task/task/v3/cmd/task@latest
-```
-
-2. すべての依存関係をインストール:
-```bash
-task setup
+task install
 ```
 
 これにより以下がインストールされます：
 - Go依存関係（`go mod download`）
-- 開発ツール（psqldef、sqlc、goimports、Air、Taskなど）
+- 開発ツール（psqldef、sqlc、goimportsはgo.modのtool directiveで管理）
 - フロントエンド依存関係（pnpm）
 
-3. 利用可能なタスクを確認:
+**Note:** Air と Task は `.mise.toml` で管理されているため、`mise install` で自動的にインストールされます。
+
+2. 利用可能なタスクを確認:
 ```bash
 task --list
 ```
@@ -131,23 +130,22 @@ task --list
 # Goの依存関係
 go mod download
 
-# 開発ツール
-go install github.com/sqldef/sqldef/cmd/psqldef@latest
-go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
-go install github.com/air-verse/air@latest
-go install github.com/go-task/task/v3/cmd/task@latest
+# Go 1.25のtool directiveで管理されているツール（psqldef、sqlc、goimportsなど）
+# go mod downloadで自動的に利用可能になります
 
-# または tools.goに定義されたツールを一括インストール
-task install-tools
+# miseで管理されているツール（Air、Task、Go、Node.js、pnpmなど）
+mise install
 
 # フロントエンドの依存関係
 pnpm install
 ```
 
 **ツール管理について:**
-- 開発ツールは`tools.go`で依存関係として管理
-- `go install`でインストール後、コマンドとして直接実行可能
-- バージョンはgo.modで管理
+- **Go開発ツール**（psqldef、sqlc、goimportsなど）: Go 1.25の`tool`ディレクティブでgo.modに定義
+  - `go tool <ツール名>`コマンドで実行（例: `go tool sqlc generate`）
+- **言語/ランタイム/CLI**（Go、Node.js、pnpm、Air、Task）: miseで管理
+  - `.mise.toml`でバージョンを定義
+  - `mise install`で自動インストール
 
 ### データベースのセットアップ
 
@@ -237,7 +235,7 @@ task generate:dao
 - ORMではなく、生のSQLを使用できる
 - Command/QueryServiceパターンとの親和性が高い
 - ボイラープレートの削減
-- `tools.go`で依存関係として管理
+- go.modの`tool`ディレクティブで依存関係を管理
 
 **クエリの追加方法:**
 1. `db/queries/*.sql` にSQLクエリを追加
@@ -245,11 +243,8 @@ task generate:dao
 
 **直接実行する場合:**
 ```bash
-# sqlcがインストールされていない場合は先にインストール
-go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
-
-# 生成実行
-sqlc generate
+# go.modのtool directiveで管理されているため、直接実行可能
+go tool sqlc generate
 ```
 
 詳細は[db/queries/users.sql](db/queries/users.sql)と[sqlc.yaml](sqlc.yaml)を参照してください。
@@ -324,8 +319,6 @@ go run cmd/server/main.go
 
 4. フロントエンド起動（別ターミナル）:
 ```bash
-task run:frontend
-# または
 pnpm run dev
 ```
 開発サーバーは http://localhost:3000 で起動します。

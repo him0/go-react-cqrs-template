@@ -16,7 +16,7 @@ echo "Output file: $OUTPUT_FILE"
 echo ""
 
 # psqldefでスキーマをエクスポート
-psqldef -U postgres -p 5432 -h localhost app_db --password=postgres \
+go tool psqldef -U postgres -p 5432 -h localhost app_db --password=postgres \
     --export > "$OUTPUT_FILE"
 
 # ファイルが作成されたかチェック

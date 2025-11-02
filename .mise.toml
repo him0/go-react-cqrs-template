@@ -4,6 +4,8 @@
 [tools]
 # Backend
 go = "1.25.3"
+"go:github.com/air-verse/air" = "latest"
+"go:github.com/go-task/task/v3/cmd/task" = "latest"
 
 # Frontend
 node = "24.11.0"

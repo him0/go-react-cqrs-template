@@ -11,14 +11,11 @@ task generate:dao
 または直接（sqlcコマンドを使用）：
 
 ```bash
-# sqlcがインストールされていない場合は先にインストール
-go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
-
-# 生成実行
-sqlc generate
+# go.modのtool directiveで管理されているため、直接実行可能
+go tool sqlc generate
 ```
 
-**Note:** sqlcは`tools.go`で依存関係として管理されており、`task setup`でインストールされます。
+**Note:** sqlcはgo.modの`tool`ディレクティブで依存関係として管理されています。
 
 ## 生成されるファイル
 

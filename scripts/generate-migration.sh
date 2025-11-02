@@ -26,7 +26,7 @@ echo "Output file: $MIGRATION_FILE"
 echo ""
 
 # psqldefでdry-runを実行してマイグレーションSQLを生成
-psqldef -U postgres -p 5432 -h localhost app_db --password=postgres \
+go tool psqldef -U postgres -p 5432 -h localhost app_db --password=postgres \
     --file=db/schema/schema.sql --dry-run > "$MIGRATION_FILE"
 
 # ファイルが空でないかチェック
