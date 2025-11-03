@@ -92,6 +92,23 @@ tasks:
     cmds:
       - sqlc generate
 
+  generate:api:
+    desc: OpenAPI仕様からGoのサーバーコードを生成
+    cmds:
+      - mkdir -p pkg/generated/openapi
+      - |
+        if command -v oapi-codegen >/dev/null 2>&1; then
+          oapi-codegen -generate types,chi-server -package openapi -o pkg/generated/openapi/server.gen.go openapi/openapi.yaml
+        else
+          $(go env GOPATH)/bin/oapi-codegen -generate types,chi-server -package openapi -o pkg/generated/openapi/server.gen.go openapi/openapi.yaml
+        fi
+
+  generate:
+    desc: すべてのコード生成を実行（DAO + API）
+    cmds:
+      - task: generate:dao
+      - task: generate:api
+
   # ビルド関連
   build:
     desc: バックエンドをビルド

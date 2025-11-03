@@ -1,6 +1,8 @@
-packageName: openapi
-outputDir: ./pkg/generated
-generateInterfaces: true
-generateModels: true
-enumClassPrefix: true
-structPrefix: true
+# oapi-codegen configuration for generating Go server code from OpenAPI spec
+package: openapi
+output: ../pkg/generated/openapi/server.gen.go
+generate:
+  models: true
+  chi-server: true
+  strict-server: false
+  embedded-spec: true
