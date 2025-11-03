@@ -13,13 +13,6 @@ tasks:
     cmds:
       - task --list
 
-  # セットアップ関連
-  install:
-    desc: 依存関係をインストール
-    cmds:
-      - go mod download
-      - pnpm install
-
   # Podman関連
   podman:up:
     desc: Podmanコンテナを起動
@@ -88,41 +81,22 @@ tasks:
     cmds:
       - air
 
-  dev:frontend:
-    desc: フロントエンド開発サーバーを起動
-    cmds:
-      - pnpm run dev
-
   run:backend:
     desc: バックエンドサーバーを起動（通常起動、ホットリロードなし）
     cmds:
       - go run cmd/server/main.go
 
   # コード生成関連
-  generate:api:
-    desc: APIコードを生成（フロントエンド）
-    cmds:
-      - pnpm run generate:api
-
   generate:dao:
     desc: DAOコードをsqlcで生成
     cmds:
       - sqlc generate
 
   # ビルド関連
-  build:backend:
+  build:
     desc: バックエンドをビルド
     cmds:
       - go build -o bin/server cmd/server/main.go
-
-  build:frontend:
-    desc: フロントエンドをビルド
-    cmds:
-      - pnpm run build
-
-  build:
-    desc: すべてをビルド
-    deps: [build:backend, build:frontend]
 
   # クリーンアップ
   clean:
@@ -139,29 +113,14 @@ tasks:
 
   # テスト関連
   test:
-    desc: すべてのテストを実行
-    deps: [test:backend, test:frontend]
-
-  test:backend:
     desc: バックエンドのテストを実行
     cmds:
       - go test -v -race ./...
-
-  test:frontend:
-    desc: フロントエンドのテストを実行
-    cmds:
-      - pnpm run test -- --run
 
   test:coverage:
     desc: カバレッジ付きでテストを実行
     cmds:
       - go test -v -race -coverprofile=coverage.out -covermode=atomic ./...
-      - pnpm run test:coverage -- --run
-
-  test:watch:
-    desc: ウォッチモードでフロントエンドテストを実行
-    cmds:
-      - pnpm run test
 
   # リント・フォーマット関連
   lint:
@@ -216,21 +175,19 @@ tasks:
   # CI関連
   ci:test:
     desc: CI用のすべてのチェックを実行
-    deps: [lint, vet, check:fmt, check:imports, modernize:check, test:backend]
+    deps: [lint, vet, check:fmt, check:imports, modernize:check, test]
     cmds:
       - echo "すべてのチェックが完了しました"
 
   # 開発フロー全体
   dev:all:
-    desc: 開発環境を一括起動（DB + バックエンド + フロントエンド）
+    desc: 開発環境を一括起動（DB + バックエンド）
     cmds:
       - echo "開発環境の起動手順："
       - echo "  1. task podman:up      # PostgreSQLを起動"
       - echo "  2. task db:migrate     # データベースマイグレーション"
       - echo "  3. task dev            # バックエンドを起動（別ターミナル）"
-      - echo "  4. task dev:frontend   # フロントエンドを起動（別ターミナル）"
       - echo ""
       - echo "または並列実行："
       - echo "  task podman:up && task db:migrate"
       - echo "  # 別ターミナルで: task dev"
-      - echo "  # さらに別ターミナルで: task dev:frontend"
