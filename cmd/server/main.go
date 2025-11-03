@@ -10,6 +10,7 @@ import (
 	"github.com/example/go-react-spec-kit-sample/internal/infrastructure"
 	"github.com/example/go-react-spec-kit-sample/internal/queryservice"
 	"github.com/example/go-react-spec-kit-sample/internal/usecase"
+	"github.com/example/go-react-spec-kit-sample/pkg/generated/openapi"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
@@ -56,17 +57,10 @@ func main() {
 		MaxAge:           300,
 	}))
 
-	// APIルート
+	// OpenAPI生成のハンドラーを使用してAPIルートを設定
 	r.Route("/api/v1", func(r chi.Router) {
-		r.Route("/users", func(r chi.Router) {
-			r.Get("/", userHandler.ListUsers)
-			r.Post("/", userHandler.CreateUser)
-			r.Route("/{userId}", func(r chi.Router) {
-				r.Get("/", userHandler.GetUser)
-				r.Put("/", userHandler.UpdateUser)
-				r.Delete("/", userHandler.DeleteUser)
-			})
-		})
+		// OpenAPI仕様に従ったルーティングを自動生成
+		openapi.HandlerFromMux(userHandler, r)
 	})
 
 	// サーバー起動

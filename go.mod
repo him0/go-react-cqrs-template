@@ -7,4 +7,5 @@ require (
 	github.com/go-chi/cors v1.2.2
 	github.com/google/uuid v1.6.0
 	github.com/lib/pq v1.10.9
+	github.com/oapi-codegen/runtime v1.1.1
 )
