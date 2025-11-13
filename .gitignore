@@ -25,7 +25,6 @@ web/.env.production.local
 pnpm-lock.yaml
 
 # Generated code
-web/src/api/generated/
 web/src/routeTree.gen.ts
 pkg/generated/
 internal/infrastructure/dao/*.go
