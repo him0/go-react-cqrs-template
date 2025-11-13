@@ -6,6 +6,7 @@ import (
 
 	"github.com/example/go-react-spec-kit-sample/internal/usecase"
 	"github.com/example/go-react-spec-kit-sample/pkg/generated/openapi"
+	"github.com/google/uuid"
 	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
@@ -21,8 +22,8 @@ func NewUserHandler(userUsecase *usecase.UserUsecase) *UserHandler {
 	}
 }
 
-// CreateUser ユーザーを作成（OpenAPI ServerInterface実装）
-func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
+// UsersCreateUser ユーザーを作成（OpenAPI ServerInterface実装）
+func (h *UserHandler) UsersCreateUser(w http.ResponseWriter, r *http.Request) {
 	var req openapi.CreateUserRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		respondError(w, http.StatusBadRequest, "invalid request body")
@@ -35,8 +36,15 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Parse string ID to UUID
+	userUUID, err := uuid.Parse(user.ID)
+	if err != nil {
+		respondError(w, http.StatusInternalServerError, "invalid user ID format")
+		return
+	}
+
 	response := openapi.User{
-		Id:        openapi_types.UUID(user.ID),
+		Id:        userUUID,
 		Name:      user.Name,
 		Email:     openapi_types.Email(user.Email),
 		CreatedAt: user.CreatedAt,
@@ -46,16 +54,23 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	respondJSON(w, http.StatusCreated, response)
 }
 
-// GetUser ユーザーを取得（OpenAPI ServerInterface実装）
-func (h *UserHandler) GetUser(w http.ResponseWriter, r *http.Request, userId openapi_types.UUID) {
+// UsersGetUser ユーザーを取得（OpenAPI ServerInterface実装）
+func (h *UserHandler) UsersGetUser(w http.ResponseWriter, r *http.Request, userId openapi_types.UUID) {
 	user, err := h.userUsecase.GetUser(r.Context(), userId.String())
 	if err != nil {
 		respondError(w, http.StatusNotFound, err.Error())
 		return
 	}
 
+	// Parse string ID to UUID
+	userUUID, err := uuid.Parse(user.ID)
+	if err != nil {
+		respondError(w, http.StatusInternalServerError, "invalid user ID format")
+		return
+	}
+
 	response := openapi.User{
-		Id:        openapi_types.UUID(user.ID),
+		Id:        userUUID,
 		Name:      user.Name,
 		Email:     openapi_types.Email(user.Email),
 		CreatedAt: user.CreatedAt,
@@ -65,20 +80,20 @@ func (h *UserHandler) GetUser(w http.ResponseWriter, r *http.Request, userId ope
 	respondJSON(w, http.StatusOK, response)
 }
 
-// ListUsers ユーザー一覧を取得（OpenAPI ServerInterface実装）
-func (h *UserHandler) ListUsers(w http.ResponseWriter, r *http.Request, params openapi.ListUsersParams) {
+// UsersListUsers ユーザー一覧を取得（OpenAPI ServerInterface実装）
+func (h *UserHandler) UsersListUsers(w http.ResponseWriter, r *http.Request, params openapi.UsersListUsersParams) {
 	// デフォルト値の設定
 	limit := 10
 	offset := 0
 
 	if params.Limit != nil {
 		if *params.Limit > 0 && *params.Limit <= 100 {
-			limit = *params.Limit
+			limit = int(*params.Limit)
 		}
 	}
 
 	if params.Offset != nil && *params.Offset >= 0 {
-		offset = *params.Offset
+		offset = int(*params.Offset)
 	}
 
 	users, total, err := h.userUsecase.ListUsers(r.Context(), limit, offset)
@@ -89,8 +104,15 @@ func (h *UserHandler) ListUsers(w http.ResponseWriter, r *http.Request, params o
 
 	userResponses := make([]openapi.User, 0, len(users))
 	for _, user := range users {
+		// Parse string ID to UUID
+		userUUID, err := uuid.Parse(user.ID)
+		if err != nil {
+			respondError(w, http.StatusInternalServerError, "invalid user ID format")
+			return
+		}
+
 		userResponses = append(userResponses, openapi.User{
-			Id:        openapi_types.UUID(user.ID),
+			Id:        userUUID,
 			Name:      user.Name,
 			Email:     openapi_types.Email(user.Email),
 			CreatedAt: user.CreatedAt,
@@ -100,14 +122,14 @@ func (h *UserHandler) ListUsers(w http.ResponseWriter, r *http.Request, params o
 
 	response := openapi.UserList{
 		Users: userResponses,
-		Total: total,
+		Total: int32(total),
 	}
 
 	respondJSON(w, http.StatusOK, response)
 }
 
-// UpdateUser ユーザーを更新（OpenAPI ServerInterface実装）
-func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request, userId openapi_types.UUID) {
+// UsersUpdateUser ユーザーを更新（OpenAPI ServerInterface実装）
+func (h *UserHandler) UsersUpdateUser(w http.ResponseWriter, r *http.Request, userId openapi_types.UUID) {
 	var req openapi.UpdateUserRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		respondError(w, http.StatusBadRequest, "invalid request body")
@@ -131,8 +153,15 @@ func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request, userId 
 		return
 	}
 
+	// Parse string ID to UUID
+	userUUID, err := uuid.Parse(user.ID)
+	if err != nil {
+		respondError(w, http.StatusInternalServerError, "invalid user ID format")
+		return
+	}
+
 	response := openapi.User{
-		Id:        openapi_types.UUID(user.ID),
+		Id:        userUUID,
 		Name:      user.Name,
 		Email:     openapi_types.Email(user.Email),
 		CreatedAt: user.CreatedAt,
@@ -142,8 +171,8 @@ func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request, userId 
 	respondJSON(w, http.StatusOK, response)
 }
 
-// DeleteUser ユーザーを削除（OpenAPI ServerInterface実装）
-func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request, userId openapi_types.UUID) {
+// UsersDeleteUser ユーザーを削除（OpenAPI ServerInterface実装）
+func (h *UserHandler) UsersDeleteUser(w http.ResponseWriter, r *http.Request, userId openapi_types.UUID) {
 	if err := h.userUsecase.DeleteUser(r.Context(), userId.String()); err != nil {
 		respondError(w, http.StatusBadRequest, err.Error())
 		return
