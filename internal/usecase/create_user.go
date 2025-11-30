@@ -51,6 +51,12 @@ func (u *CreateUserUsecase) Execute(ctx context.Context, name, email string) (*d
 			return err
 		}
 
+		// ユーザー作成ログを保存
+		userLog := domain.NewUserLog(user.ID, domain.UserLogActionCreated)
+		if err := command.SaveUserLog(ctx, tx, userLog); err != nil {
+			return err
+		}
+
 		createdUser = user
 		return nil
 	})

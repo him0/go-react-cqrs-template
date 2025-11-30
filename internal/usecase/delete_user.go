@@ -5,6 +5,7 @@ import (
 	"errors"
 
 	"github.com/example/go-react-spec-kit-sample/internal/command"
+	"github.com/example/go-react-spec-kit-sample/internal/domain"
 	"github.com/example/go-react-spec-kit-sample/internal/infrastructure"
 )
 
@@ -35,6 +36,12 @@ func (u *DeleteUserUsecase) Execute(ctx context.Context, id string) error {
 		}
 		if user == nil {
 			return errors.New("user not found")
+		}
+
+		// ユーザー削除ログを保存
+		userLog := domain.NewUserLog(id, domain.UserLogActionDeleted)
+		if err := command.SaveUserLog(ctx, tx, userLog); err != nil {
+			return err
 		}
 
 		// 削除
