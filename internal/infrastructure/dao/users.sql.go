@@ -7,8 +7,7 @@ package dao
 
 import (
 	"context"
-
-	"github.com/jackc/pgx/v5/pgtype"
+	"time"
 )
 
 const countUsers = `-- name: CountUsers :one
@@ -16,7 +15,7 @@ SELECT COUNT(*) FROM users
 `
 
 func (q *Queries) CountUsers(ctx context.Context) (int64, error) {
-	row := q.db.QueryRow(ctx, countUsers)
+	row := q.db.QueryRowContext(ctx, countUsers)
 	var count int64
 	err := row.Scan(&count)
 	return count, err
@@ -28,15 +27,15 @@ VALUES ($1, $2, $3, $4, $5)
 `
 
 type CreateUserParams struct {
-	ID        string           `db:"id" json:"id"`
-	Name      string           `db:"name" json:"name"`
-	Email     string           `db:"email" json:"email"`
-	CreatedAt pgtype.Timestamp `db:"created_at" json:"created_at"`
-	UpdatedAt pgtype.Timestamp `db:"updated_at" json:"updated_at"`
+	ID        string    `db:"id" json:"id"`
+	Name      string    `db:"name" json:"name"`
+	Email     string    `db:"email" json:"email"`
+	CreatedAt time.Time `db:"created_at" json:"created_at"`
+	UpdatedAt time.Time `db:"updated_at" json:"updated_at"`
 }
 
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) error {
-	_, err := q.db.Exec(ctx, createUser,
+	_, err := q.db.ExecContext(ctx, createUser,
 		arg.ID,
 		arg.Name,
 		arg.Email,
@@ -51,7 +50,7 @@ DELETE FROM users WHERE id = $1
 `
 
 func (q *Queries) DeleteUser(ctx context.Context, id string) error {
-	_, err := q.db.Exec(ctx, deleteUser, id)
+	_, err := q.db.ExecContext(ctx, deleteUser, id)
 	return err
 }
 
@@ -62,7 +61,27 @@ WHERE email = $1
 `
 
 func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error) {
-	row := q.db.QueryRow(ctx, getUserByEmail, email)
+	row := q.db.QueryRowContext(ctx, getUserByEmail, email)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Email,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const getUserByEmailForUpdate = `-- name: GetUserByEmailForUpdate :one
+SELECT id, name, email, created_at, updated_at
+FROM users
+WHERE email = $1
+FOR UPDATE
+`
+
+func (q *Queries) GetUserByEmailForUpdate(ctx context.Context, email string) (User, error) {
+	row := q.db.QueryRowContext(ctx, getUserByEmailForUpdate, email)
 	var i User
 	err := row.Scan(
 		&i.ID,
@@ -81,7 +100,27 @@ WHERE id = $1
 `
 
 func (q *Queries) GetUserByID(ctx context.Context, id string) (User, error) {
-	row := q.db.QueryRow(ctx, getUserByID, id)
+	row := q.db.QueryRowContext(ctx, getUserByID, id)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Email,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const getUserByIDForUpdate = `-- name: GetUserByIDForUpdate :one
+SELECT id, name, email, created_at, updated_at
+FROM users
+WHERE id = $1
+FOR UPDATE
+`
+
+func (q *Queries) GetUserByIDForUpdate(ctx context.Context, id string) (User, error) {
+	row := q.db.QueryRowContext(ctx, getUserByIDForUpdate, id)
 	var i User
 	err := row.Scan(
 		&i.ID,
@@ -106,7 +145,7 @@ type ListUsersParams struct {
 }
 
 func (q *Queries) ListUsers(ctx context.Context, arg ListUsersParams) ([]User, error) {
-	rows, err := q.db.Query(ctx, listUsers, arg.Limit, arg.Offset)
+	rows, err := q.db.QueryContext(ctx, listUsers, arg.Limit, arg.Offset)
 	if err != nil {
 		return nil, err
 	}
@@ -125,6 +164,9 @@ func (q *Queries) ListUsers(ctx context.Context, arg ListUsersParams) ([]User, e
 		}
 		items = append(items, i)
 	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
@@ -138,18 +180,46 @@ WHERE id = $4
 `
 
 type UpdateUserParams struct {
-	Name      string           `db:"name" json:"name"`
-	Email     string           `db:"email" json:"email"`
-	UpdatedAt pgtype.Timestamp `db:"updated_at" json:"updated_at"`
-	ID        string           `db:"id" json:"id"`
+	Name      string    `db:"name" json:"name"`
+	Email     string    `db:"email" json:"email"`
+	UpdatedAt time.Time `db:"updated_at" json:"updated_at"`
+	ID        string    `db:"id" json:"id"`
 }
 
 func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) error {
-	_, err := q.db.Exec(ctx, updateUser,
+	_, err := q.db.ExecContext(ctx, updateUser,
 		arg.Name,
 		arg.Email,
 		arg.UpdatedAt,
 		arg.ID,
+	)
+	return err
+}
+
+const upsertUser = `-- name: UpsertUser :exec
+INSERT INTO users (id, name, email, created_at, updated_at)
+VALUES ($1, $2, $3, $4, $5)
+ON CONFLICT (id) DO UPDATE SET
+    name = EXCLUDED.name,
+    email = EXCLUDED.email,
+    updated_at = EXCLUDED.updated_at
+`
+
+type UpsertUserParams struct {
+	ID        string    `db:"id" json:"id"`
+	Name      string    `db:"name" json:"name"`
+	Email     string    `db:"email" json:"email"`
+	CreatedAt time.Time `db:"created_at" json:"created_at"`
+	UpdatedAt time.Time `db:"updated_at" json:"updated_at"`
+}
+
+func (q *Queries) UpsertUser(ctx context.Context, arg UpsertUserParams) error {
+	_, err := q.db.ExecContext(ctx, upsertUser,
+		arg.ID,
+		arg.Name,
+		arg.Email,
+		arg.CreatedAt,
+		arg.UpdatedAt,
 	)
 	return err
 }
