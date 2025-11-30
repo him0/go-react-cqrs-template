@@ -14,9 +14,9 @@ namespace UserManagementAPI;
  */
 model User {
   /**
-   * User ID
+   * User ID (ULID format)
    */
-  @format("uuid")
+  @pattern("^[0-9A-HJKMNP-TV-Z]{26}$")
   id: string;
 
   /**
@@ -152,10 +152,10 @@ interface Users {
   @route("/{userId}")
   getUser(
     /**
-     * User ID
+     * User ID (ULID format)
      */
     @path
-    @format("uuid")
+    @pattern("^[0-9A-HJKMNP-TV-Z]{26}$")
     userId: string
   ): User | Error;
 
@@ -166,10 +166,10 @@ interface Users {
   @route("/{userId}")
   updateUser(
     /**
-     * User ID
+     * User ID (ULID format)
      */
     @path
-    @format("uuid")
+    @pattern("^[0-9A-HJKMNP-TV-Z]{26}$")
     userId: string,
 
     @body body: UpdateUserRequest
@@ -182,10 +182,10 @@ interface Users {
   @route("/{userId}")
   deleteUser(
     /**
-     * User ID
+     * User ID (ULID format)
      */
     @path
-    @format("uuid")
+    @pattern("^[0-9A-HJKMNP-TV-Z]{26}$")
     userId: string
   ): {
     @statusCode statusCode: 204;
