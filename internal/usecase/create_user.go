@@ -28,28 +28,35 @@ func NewCreateUserUsecase(
 
 // Execute ユーザーを作成
 func (u *CreateUserUsecase) Execute(ctx context.Context, name, email string) (*domain.User, error) {
-	// メールアドレスの重複チェック（リーダーDB）
-	existingUser, err := u.userQuery.FindByEmail(ctx, email)
-	if err != nil {
-		return nil, err
-	}
-	if existingUser != nil {
-		return nil, errors.New("email already exists")
-	}
+	var createdUser *domain.User
 
-	// ドメインモデルの作成
-	user, err := domain.NewUser(name, email)
-	if err != nil {
-		return nil, err
-	}
+	err := u.txManager.RunInTransaction(ctx, func(ctx context.Context, tx infrastructure.DBTX) error {
+		// メールアドレスの重複チェック（ロック付き）
+		existingUser, err := command.FindByEmailForUpdate(ctx, tx, email)
+		if err != nil {
+			return err
+		}
+		if existingUser != nil {
+			return errors.New("email already exists")
+		}
 
-	// 永続化（ライターDB、トランザクション内）
-	err = u.txManager.RunInTransaction(ctx, func(ctx context.Context, tx infrastructure.DBTX) error {
-		return command.Create(ctx, tx, user)
+		// ドメインモデルの作成
+		user, err := domain.NewUser(name, email)
+		if err != nil {
+			return err
+		}
+
+		// 永続化
+		if err := command.Save(ctx, tx, user); err != nil {
+			return err
+		}
+
+		createdUser = user
+		return nil
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	return user, nil
+	return createdUser, nil
 }

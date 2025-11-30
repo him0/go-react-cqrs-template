@@ -27,17 +27,17 @@ func NewDeleteUserUsecase(
 
 // Execute ユーザーを削除
 func (u *DeleteUserUsecase) Execute(ctx context.Context, id string) error {
-	// 存在確認（リーダーDB）
-	user, err := u.userQuery.FindByID(ctx, id)
-	if err != nil {
-		return err
-	}
-	if user == nil {
-		return errors.New("user not found")
-	}
-
-	// 削除（ライターDB、トランザクション内）
 	return u.txManager.RunInTransaction(ctx, func(ctx context.Context, tx infrastructure.DBTX) error {
+		// 行ロック付きで存在確認
+		user, err := command.FindByIDForUpdate(ctx, tx, id)
+		if err != nil {
+			return err
+		}
+		if user == nil {
+			return errors.New("user not found")
+		}
+
+		// 削除
 		return command.Delete(ctx, tx, id)
 	})
 }

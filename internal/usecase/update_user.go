@@ -28,38 +28,45 @@ func NewUpdateUserUsecase(
 
 // Execute ユーザーを更新
 func (u *UpdateUserUsecase) Execute(ctx context.Context, id, name, email string) (*domain.User, error) {
-	// 既存ユーザーの取得（リーダーDB）
-	user, err := u.userQuery.FindByID(ctx, id)
-	if err != nil {
-		return nil, err
-	}
-	if user == nil {
-		return nil, errors.New("user not found")
-	}
+	var updatedUser *domain.User
 
-	// メールアドレスが変更される場合、重複チェック（リーダーDB）
-	if email != "" && email != user.Email {
-		existingUser, err := u.userQuery.FindByEmail(ctx, email)
+	err := u.txManager.RunInTransaction(ctx, func(ctx context.Context, tx infrastructure.DBTX) error {
+		// 行ロック付きでユーザーを取得
+		user, err := command.FindByIDForUpdate(ctx, tx, id)
 		if err != nil {
-			return nil, err
+			return err
 		}
-		if existingUser != nil {
-			return nil, errors.New("email already exists")
+		if user == nil {
+			return errors.New("user not found")
 		}
-	}
 
-	// ドメインモデルの更新
-	if err := user.Update(name, email); err != nil {
-		return nil, err
-	}
+		// メールアドレスが変更される場合、重複チェック（ロック付き）
+		if email != "" && email != user.Email {
+			existingUser, err := command.FindByEmailForUpdate(ctx, tx, email)
+			if err != nil {
+				return err
+			}
+			if existingUser != nil {
+				return errors.New("email already exists")
+			}
+		}
 
-	// 永続化（ライターDB、トランザクション内）
-	err = u.txManager.RunInTransaction(ctx, func(ctx context.Context, tx infrastructure.DBTX) error {
-		return command.Update(ctx, tx, user)
+		// ドメインモデルの更新
+		if err := user.Update(name, email); err != nil {
+			return err
+		}
+
+		// 永続化
+		if err := command.Save(ctx, tx, user); err != nil {
+			return err
+		}
+
+		updatedUser = user
+		return nil
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	return user, nil
+	return updatedUser, nil
 }
