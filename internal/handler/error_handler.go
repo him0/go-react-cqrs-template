@@ -5,10 +5,10 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/example/go-react-spec-kit-sample/internal/domain"
-	apperrors "github.com/example/go-react-spec-kit-sample/internal/pkg/errors"
-	"github.com/example/go-react-spec-kit-sample/internal/pkg/logger"
-	"github.com/example/go-react-spec-kit-sample/pkg/generated/openapi"
+	"github.com/example/go-react-cqrs-template/internal/domain"
+	apperrors "github.com/example/go-react-cqrs-template/internal/pkg/errors"
+	"github.com/example/go-react-cqrs-template/internal/pkg/logger"
+	"github.com/example/go-react-cqrs-template/pkg/generated/openapi"
 )
 
 // HandleError はエラーをドメインエラーから AppError に変換し、適切な HTTP レスポンスを返す

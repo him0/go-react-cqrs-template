@@ -5,8 +5,8 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/example/go-react-spec-kit-sample/internal/usecase"
-	"github.com/example/go-react-spec-kit-sample/pkg/generated/openapi"
+	"github.com/example/go-react-cqrs-template/internal/usecase"
+	"github.com/example/go-react-cqrs-template/pkg/generated/openapi"
 	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 

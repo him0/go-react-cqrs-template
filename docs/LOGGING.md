@@ -43,7 +43,7 @@ export LOG_FORMAT=text
 ```go
 import (
     "log/slog"
-    "github.com/example/go-react-spec-kit-sample/internal/pkg/logger"
+    "github.com/example/go-react-cqrs-template/internal/pkg/logger"
 )
 
 // アプリケーション起動時にロガーをセットアップ
@@ -81,8 +81,8 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 
 ```go
 import (
-    "github.com/example/go-react-spec-kit-sample/internal/pkg/errors"
-    "github.com/example/go-react-spec-kit-sample/internal/pkg/logger"
+    "github.com/example/go-react-cqrs-template/internal/pkg/errors"
+    "github.com/example/go-react-cqrs-template/internal/pkg/logger"
 )
 
 // エラーを作成
@@ -146,8 +146,8 @@ err4 := errors.Conflict("email exists", "メールアドレスが既に使用さ
   "status_code": 500,
   "error_level": "ERROR",
   "stack_trace": [
-    "go-react-spec-kit-sample/internal/application/user_service.go:45 application.(*UserService).CreateUser",
-    "go-react-spec-kit-sample/internal/interfaces/http/user_handler.go:135 http.(*UserHandler).CreateUser",
+    "go-react-cqrs-template/internal/application/user_service.go:45 application.(*UserService).CreateUser",
+    "go-react-cqrs-template/internal/interfaces/http/user_handler.go:135 http.(*UserHandler).CreateUser",
     "..."
   ]
 }

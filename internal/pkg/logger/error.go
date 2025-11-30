@@ -3,7 +3,7 @@ package logger
 import (
 	"log/slog"
 
-	"github.com/example/go-react-spec-kit-sample/internal/pkg/errors"
+	"github.com/example/go-react-cqrs-template/internal/pkg/errors"
 )
 
 // LogError はAppErrorを構造化ログとして出力します

@@ -4,8 +4,8 @@ import (
 	"context"
 	"database/sql"
 
-	"github.com/example/go-react-spec-kit-sample/internal/domain"
-	"github.com/example/go-react-spec-kit-sample/internal/infrastructure/dao"
+	"github.com/example/go-react-cqrs-template/internal/domain"
+	"github.com/example/go-react-cqrs-template/internal/infrastructure/dao"
 )
 
 // UserQueryService ユーザー読み取り操作を担当

@@ -3,7 +3,7 @@ package usecase
 import (
 	"context"
 
-	"github.com/example/go-react-spec-kit-sample/internal/domain"
+	"github.com/example/go-react-cqrs-template/internal/domain"
 )
 
 // ListUsersUsecase ユーザー一覧取得ユースケース

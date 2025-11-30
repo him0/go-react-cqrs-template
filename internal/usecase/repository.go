@@ -3,8 +3,8 @@ package usecase
 import (
 	"context"
 
-	"github.com/example/go-react-spec-kit-sample/internal/domain"
-	"github.com/example/go-react-spec-kit-sample/internal/infrastructure"
+	"github.com/example/go-react-cqrs-template/internal/domain"
+	"github.com/example/go-react-cqrs-template/internal/infrastructure"
 )
 
 // TransactionManager トランザクション管理のインターフェース

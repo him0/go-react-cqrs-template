@@ -81,7 +81,7 @@ linters-settings:
 
   goimports:
     # Put local packages after 3rd-party packages
-    local-prefixes: github.com/example/go-react-spec-kit-sample
+    local-prefixes: github.com/example/go-react-cqrs-template
 
   revive:
     confidence: 0.8

@@ -245,7 +245,7 @@ func captureStack(skip int) []string {
 		}
 
 		// ファイルパスを短縮（プロジェクトルート以降のみ）
-		if idx := strings.Index(file, "go-react-spec-kit-sample/"); idx >= 0 {
+		if idx := strings.Index(file, "go-react-cqrs-template/"); idx >= 0 {
 			file = file[idx:]
 		}
 

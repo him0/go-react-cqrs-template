@@ -1,4 +1,4 @@
-module github.com/example/go-react-spec-kit-sample
+module github.com/example/go-react-cqrs-template
 
 go 1.24.7
 

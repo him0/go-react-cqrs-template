@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/example/go-react-spec-kit-sample/internal/domain"
-	"github.com/example/go-react-spec-kit-sample/internal/infrastructure"
-	"github.com/example/go-react-spec-kit-sample/internal/infrastructure/dao"
+	"github.com/example/go-react-cqrs-template/internal/domain"
+	"github.com/example/go-react-cqrs-template/internal/infrastructure"
+	"github.com/example/go-react-cqrs-template/internal/infrastructure/dao"
 )
 
 // SaveUserLog ユーザーログを保存（トランザクション内で使用）
