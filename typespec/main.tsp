@@ -142,7 +142,6 @@ interface Users {
     @body body: CreateUserRequest
   ): {
     @statusCode statusCode: 201;
-    @body body: User;
   } | Error;
 
   /**
@@ -173,7 +172,9 @@ interface Users {
     userId: string,
 
     @body body: UpdateUserRequest
-  ): User | Error;
+  ): {
+    @statusCode statusCode: 204;
+  } | Error;
 
   /**
    * Delete user

@@ -10,6 +10,9 @@ import (
 	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
+// コンパイル時に ServerInterface の実装を検証
+var _ openapi.ServerInterface = (*UserHandler)(nil)
+
 // UserHandler HTTPハンドラー（OpenAPI生成のServerInterfaceを実装）
 type UserHandler struct {
 	createUser *usecase.CreateUserUsecase
@@ -47,21 +50,12 @@ func (h *UserHandler) UsersCreateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := h.createUser.Execute(r.Context(), req.Name, string(req.Email))
-	if err != nil {
+	if err := h.createUser.Execute(r.Context(), req.Name, string(req.Email)); err != nil {
 		HandleError(w, err, h.logger)
 		return
 	}
 
-	response := openapi.User{
-		Id:        user.ID,
-		Name:      user.Name,
-		Email:     openapi_types.Email(user.Email),
-		CreatedAt: user.CreatedAt,
-		UpdatedAt: user.UpdatedAt,
-	}
-
-	respondJSON(w, http.StatusCreated, response)
+	w.WriteHeader(http.StatusCreated)
 }
 
 // UsersGetUser ユーザーを取得（OpenAPI ServerInterface実装）
@@ -143,21 +137,12 @@ func (h *UserHandler) UsersUpdateUser(w http.ResponseWriter, r *http.Request, us
 		email = string(*req.Email)
 	}
 
-	user, err := h.updateUser.Execute(r.Context(), userId, name, email)
-	if err != nil {
+	if err := h.updateUser.Execute(r.Context(), userId, name, email); err != nil {
 		HandleError(w, err, h.logger)
 		return
 	}
 
-	response := openapi.User{
-		Id:        user.ID,
-		Name:      user.Name,
-		Email:     openapi_types.Email(user.Email),
-		CreatedAt: user.CreatedAt,
-		UpdatedAt: user.UpdatedAt,
-	}
-
-	respondJSON(w, http.StatusOK, response)
+	w.WriteHeader(http.StatusNoContent)
 }
 
 // UsersDeleteUser ユーザーを削除（OpenAPI ServerInterface実装）

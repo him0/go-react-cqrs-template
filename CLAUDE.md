@@ -36,6 +36,17 @@ go test ./...     # テスト
 sqlc generate     # DAO生成 (要sqlcインストール)
 ```
 
+## Troubleshooting
+
+### mise
+```bash
+# go コマンドが見つからない場合
+eval "$(mise activate zsh)" && go build ./...
+
+# Config files are not trusted の場合
+mise trust && mise install
+```
+
 ## Adding New Features
 1. `db/schema/` にテーブル定義追加
 2. `db/queries/` にSQL追加

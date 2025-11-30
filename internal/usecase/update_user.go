@@ -26,10 +26,8 @@ func NewUpdateUserUsecase(
 }
 
 // Execute ユーザーを更新
-func (u *UpdateUserUsecase) Execute(ctx context.Context, id, name, email string) (*domain.User, error) {
-	var updatedUser *domain.User
-
-	err := u.txManager.RunInTransaction(ctx, func(ctx context.Context, tx infrastructure.DBTX) error {
+func (u *UpdateUserUsecase) Execute(ctx context.Context, id, name, email string) error {
+	return u.txManager.RunInTransaction(ctx, func(ctx context.Context, tx infrastructure.DBTX) error {
 		// 行ロック付きでユーザーを取得
 		user, err := command.FindByIDForUpdate(ctx, tx, id)
 		if err != nil {
@@ -56,16 +54,6 @@ func (u *UpdateUserUsecase) Execute(ctx context.Context, id, name, email string)
 		}
 
 		// 永続化
-		if err := command.Save(ctx, tx, user); err != nil {
-			return err
-		}
-
-		updatedUser = user
-		return nil
+		return command.Save(ctx, tx, user)
 	})
-	if err != nil {
-		return nil, err
-	}
-
-	return updatedUser, nil
 }

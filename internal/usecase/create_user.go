@@ -26,10 +26,8 @@ func NewCreateUserUsecase(
 }
 
 // Execute ユーザーを作成
-func (u *CreateUserUsecase) Execute(ctx context.Context, name, email string) (*domain.User, error) {
-	var createdUser *domain.User
-
-	err := u.txManager.RunInTransaction(ctx, func(ctx context.Context, tx infrastructure.DBTX) error {
+func (u *CreateUserUsecase) Execute(ctx context.Context, name, email string) error {
+	return u.txManager.RunInTransaction(ctx, func(ctx context.Context, tx infrastructure.DBTX) error {
 		// メールアドレスの重複チェック（ロック付き）
 		existingUser, err := command.FindByEmailForUpdate(ctx, tx, email)
 		if err != nil {
@@ -56,12 +54,6 @@ func (u *CreateUserUsecase) Execute(ctx context.Context, name, email string) (*d
 			return err
 		}
 
-		createdUser = user
 		return nil
 	})
-	if err != nil {
-		return nil, err
-	}
-
-	return createdUser, nil
 }
