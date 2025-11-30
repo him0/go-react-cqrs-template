@@ -2,6 +2,7 @@ package handler
 
 import (
 	"encoding/json"
+	"log/slog"
 	"net/http"
 
 	"github.com/example/go-react-spec-kit-sample/internal/usecase"
@@ -17,6 +18,7 @@ type UserHandler struct {
 	listUsers  *usecase.ListUsersUsecase
 	updateUser *usecase.UpdateUserUsecase
 	deleteUser *usecase.DeleteUserUsecase
+	logger     *slog.Logger
 }
 
 // NewUserHandler UserHandlerのコンストラクタ
@@ -26,6 +28,7 @@ func NewUserHandler(
 	listUsers *usecase.ListUsersUsecase,
 	updateUser *usecase.UpdateUserUsecase,
 	deleteUser *usecase.DeleteUserUsecase,
+	logger *slog.Logger,
 ) *UserHandler {
 	return &UserHandler{
 		createUser: createUser,
@@ -33,6 +36,7 @@ func NewUserHandler(
 		listUsers:  listUsers,
 		updateUser: updateUser,
 		deleteUser: deleteUser,
+		logger:     logger,
 	}
 }
 
@@ -40,13 +44,13 @@ func NewUserHandler(
 func (h *UserHandler) UsersCreateUser(w http.ResponseWriter, r *http.Request) {
 	var req openapi.CreateUserRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		respondError(w, http.StatusBadRequest, "invalid request body")
+		respondError(w, http.StatusBadRequest, "リクエストの形式が不正です")
 		return
 	}
 
 	user, err := h.createUser.Execute(r.Context(), req.Name, string(req.Email))
 	if err != nil {
-		respondError(w, http.StatusBadRequest, err.Error())
+		HandleError(w, err, h.logger)
 		return
 	}
 
@@ -72,7 +76,7 @@ func (h *UserHandler) UsersCreateUser(w http.ResponseWriter, r *http.Request) {
 func (h *UserHandler) UsersGetUser(w http.ResponseWriter, r *http.Request, userId openapi_types.UUID) {
 	user, err := h.findUser.Execute(r.Context(), userId.String())
 	if err != nil {
-		respondError(w, http.StatusNotFound, err.Error())
+		HandleError(w, err, h.logger)
 		return
 	}
 
@@ -112,7 +116,7 @@ func (h *UserHandler) UsersListUsers(w http.ResponseWriter, r *http.Request, par
 
 	users, total, err := h.listUsers.Execute(r.Context(), limit, offset)
 	if err != nil {
-		respondError(w, http.StatusInternalServerError, err.Error())
+		HandleError(w, err, h.logger)
 		return
 	}
 
@@ -146,7 +150,7 @@ func (h *UserHandler) UsersListUsers(w http.ResponseWriter, r *http.Request, par
 func (h *UserHandler) UsersUpdateUser(w http.ResponseWriter, r *http.Request, userId openapi_types.UUID) {
 	var req openapi.UpdateUserRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		respondError(w, http.StatusBadRequest, "invalid request body")
+		respondError(w, http.StatusBadRequest, "リクエストの形式が不正です")
 		return
 	}
 
@@ -163,7 +167,7 @@ func (h *UserHandler) UsersUpdateUser(w http.ResponseWriter, r *http.Request, us
 
 	user, err := h.updateUser.Execute(r.Context(), userId.String(), name, email)
 	if err != nil {
-		respondError(w, http.StatusBadRequest, err.Error())
+		HandleError(w, err, h.logger)
 		return
 	}
 
@@ -188,7 +192,7 @@ func (h *UserHandler) UsersUpdateUser(w http.ResponseWriter, r *http.Request, us
 // UsersDeleteUser ユーザーを削除（OpenAPI ServerInterface実装）
 func (h *UserHandler) UsersDeleteUser(w http.ResponseWriter, r *http.Request, userId openapi_types.UUID) {
 	if err := h.deleteUser.Execute(r.Context(), userId.String()); err != nil {
-		respondError(w, http.StatusBadRequest, err.Error())
+		HandleError(w, err, h.logger)
 		return
 	}
 

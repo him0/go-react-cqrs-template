@@ -2,7 +2,6 @@ package usecase
 
 import (
 	"context"
-	"errors"
 
 	"github.com/example/go-react-spec-kit-sample/internal/command"
 	"github.com/example/go-react-spec-kit-sample/internal/domain"
@@ -37,7 +36,7 @@ func (u *CreateUserUsecase) Execute(ctx context.Context, name, email string) (*d
 			return err
 		}
 		if existingUser != nil {
-			return errors.New("email already exists")
+			return domain.ErrEmailAlreadyExists(email)
 		}
 
 		// ドメインモデルの作成

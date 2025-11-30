@@ -1,7 +1,6 @@
 package domain
 
 import (
-	"errors"
 	"time"
 
 	"github.com/google/uuid"
@@ -19,10 +18,10 @@ type User struct {
 // NewUser ユーザーを作成
 func NewUser(name, email string) (*User, error) {
 	if name == "" {
-		return nil, errors.New("name is required")
+		return nil, ErrNameRequired()
 	}
 	if email == "" {
-		return nil, errors.New("email is required")
+		return nil, ErrEmailRequired()
 	}
 
 	now := time.Now()

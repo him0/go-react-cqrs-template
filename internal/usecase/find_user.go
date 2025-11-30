@@ -2,7 +2,6 @@ package usecase
 
 import (
 	"context"
-	"errors"
 
 	"github.com/example/go-react-spec-kit-sample/internal/domain"
 )
@@ -26,7 +25,7 @@ func (u *FindUserUsecase) Execute(ctx context.Context, id string) (*domain.User,
 		return nil, err
 	}
 	if user == nil {
-		return nil, errors.New("user not found")
+		return nil, domain.ErrUserNotFound(id)
 	}
 	return user, nil
 }

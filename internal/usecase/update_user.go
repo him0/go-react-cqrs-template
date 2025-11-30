@@ -2,7 +2,6 @@ package usecase
 
 import (
 	"context"
-	"errors"
 
 	"github.com/example/go-react-spec-kit-sample/internal/command"
 	"github.com/example/go-react-spec-kit-sample/internal/domain"
@@ -37,7 +36,7 @@ func (u *UpdateUserUsecase) Execute(ctx context.Context, id, name, email string)
 			return err
 		}
 		if user == nil {
-			return errors.New("user not found")
+			return domain.ErrUserNotFound(id)
 		}
 
 		// メールアドレスが変更される場合、重複チェック（ロック付き）
@@ -47,7 +46,7 @@ func (u *UpdateUserUsecase) Execute(ctx context.Context, id, name, email string)
 				return err
 			}
 			if existingUser != nil {
-				return errors.New("email already exists")
+				return domain.ErrEmailAlreadyExists(email)
 			}
 		}
 
