@@ -1,9 +1,10 @@
 package domain
 
 import (
+	"crypto/rand"
 	"time"
 
-	"github.com/google/uuid"
+	"github.com/oklog/ulid/v2"
 )
 
 // User ドメインモデル
@@ -26,7 +27,7 @@ func NewUser(name, email string) (*User, error) {
 
 	now := time.Now()
 	return &User{
-		ID:        uuid.New().String(),
+		ID:        ulid.MustNew(ulid.Timestamp(now), rand.Reader).String(),
 		Name:      name,
 		Email:     email,
 		CreatedAt: now,

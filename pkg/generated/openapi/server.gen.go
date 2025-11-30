@@ -48,8 +48,8 @@ type User struct {
 	// Email User email address
 	Email openapi_types.Email `json:"email"`
 
-	// Id User ID
-	Id openapi_types.UUID `json:"id"`
+	// Id User ID (ULID format)
+	Id string `json:"id"`
 
 	// Name User name
 	Name string `json:"name"`
@@ -92,13 +92,13 @@ type ServerInterface interface {
 	UsersCreateUser(w http.ResponseWriter, r *http.Request)
 
 	// (DELETE /users/{userId})
-	UsersDeleteUser(w http.ResponseWriter, r *http.Request, userId openapi_types.UUID)
+	UsersDeleteUser(w http.ResponseWriter, r *http.Request, userId string)
 
 	// (GET /users/{userId})
-	UsersGetUser(w http.ResponseWriter, r *http.Request, userId openapi_types.UUID)
+	UsersGetUser(w http.ResponseWriter, r *http.Request, userId string)
 
 	// (PUT /users/{userId})
-	UsersUpdateUser(w http.ResponseWriter, r *http.Request, userId openapi_types.UUID)
+	UsersUpdateUser(w http.ResponseWriter, r *http.Request, userId string)
 }
 
 // Unimplemented server implementation that returns http.StatusNotImplemented for each endpoint.
@@ -116,17 +116,17 @@ func (_ Unimplemented) UsersCreateUser(w http.ResponseWriter, r *http.Request) {
 }
 
 // (DELETE /users/{userId})
-func (_ Unimplemented) UsersDeleteUser(w http.ResponseWriter, r *http.Request, userId openapi_types.UUID) {
+func (_ Unimplemented) UsersDeleteUser(w http.ResponseWriter, r *http.Request, userId string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // (GET /users/{userId})
-func (_ Unimplemented) UsersGetUser(w http.ResponseWriter, r *http.Request, userId openapi_types.UUID) {
+func (_ Unimplemented) UsersGetUser(w http.ResponseWriter, r *http.Request, userId string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // (PUT /users/{userId})
-func (_ Unimplemented) UsersUpdateUser(w http.ResponseWriter, r *http.Request, userId openapi_types.UUID) {
+func (_ Unimplemented) UsersUpdateUser(w http.ResponseWriter, r *http.Request, userId string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -194,7 +194,7 @@ func (siw *ServerInterfaceWrapper) UsersDeleteUser(w http.ResponseWriter, r *htt
 	var err error
 
 	// ------------- Path parameter "userId" -------------
-	var userId openapi_types.UUID
+	var userId string
 
 	err = runtime.BindStyledParameterWithOptions("simple", "userId", chi.URLParam(r, "userId"), &userId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
 	if err != nil {
@@ -219,7 +219,7 @@ func (siw *ServerInterfaceWrapper) UsersGetUser(w http.ResponseWriter, r *http.R
 	var err error
 
 	// ------------- Path parameter "userId" -------------
-	var userId openapi_types.UUID
+	var userId string
 
 	err = runtime.BindStyledParameterWithOptions("simple", "userId", chi.URLParam(r, "userId"), &userId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
 	if err != nil {
@@ -244,7 +244,7 @@ func (siw *ServerInterfaceWrapper) UsersUpdateUser(w http.ResponseWriter, r *htt
 	var err error
 
 	// ------------- Path parameter "userId" -------------
-	var userId openapi_types.UUID
+	var userId string
 
 	err = runtime.BindStyledParameterWithOptions("simple", "userId", chi.URLParam(r, "userId"), &userId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
 	if err != nil {

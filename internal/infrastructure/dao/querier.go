@@ -9,8 +9,8 @@ import (
 )
 
 type Querier interface {
-	CountUsers(ctx context.Context) (int64, error)
 	CountUserLogsByUserID(ctx context.Context, userID string) (int64, error)
+	CountUsers(ctx context.Context) (int64, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) error
 	CreateUserLog(ctx context.Context, arg CreateUserLogParams) error
 	DeleteUser(ctx context.Context, id string) error

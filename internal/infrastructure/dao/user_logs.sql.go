@@ -10,6 +10,17 @@ import (
 	"time"
 )
 
+const countUserLogsByUserID = `-- name: CountUserLogsByUserID :one
+SELECT COUNT(*) FROM user_logs WHERE user_id = $1
+`
+
+func (q *Queries) CountUserLogsByUserID(ctx context.Context, userID string) (int64, error) {
+	row := q.db.QueryRowContext(ctx, countUserLogsByUserID, userID)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const createUserLog = `-- name: CreateUserLog :exec
 INSERT INTO user_logs (id, user_id, action, created_at)
 VALUES ($1, $2, $3, $4)
@@ -72,15 +83,4 @@ func (q *Queries) GetUserLogsByUserID(ctx context.Context, arg GetUserLogsByUser
 		return nil, err
 	}
 	return items, nil
-}
-
-const countUserLogsByUserID = `-- name: CountUserLogsByUserID :one
-SELECT COUNT(*) FROM user_logs WHERE user_id = $1
-`
-
-func (q *Queries) CountUserLogsByUserID(ctx context.Context, userID string) (int64, error) {
-	row := q.db.QueryRowContext(ctx, countUserLogsByUserID, userID)
-	var count int64
-	err := row.Scan(&count)
-	return count, err
 }

@@ -79,10 +79,10 @@ paths:
         - name: userId
           in: path
           required: true
-          description: User ID
+          description: User ID (ULID format)
           schema:
             type: string
-            format: uuid
+            pattern: '^[0-9A-HJKMNP-TV-Z]{26}$'
       responses:
         '200':
           description: The request has succeeded.
@@ -105,10 +105,10 @@ paths:
         - name: userId
           in: path
           required: true
-          description: User ID
+          description: User ID (ULID format)
           schema:
             type: string
-            format: uuid
+            pattern: '^[0-9A-HJKMNP-TV-Z]{26}$'
       responses:
         '200':
           description: The request has succeeded.
@@ -137,10 +137,10 @@ paths:
         - name: userId
           in: path
           required: true
-          description: User ID
+          description: User ID (ULID format)
           schema:
             type: string
-            format: uuid
+            pattern: '^[0-9A-HJKMNP-TV-Z]{26}$'
       responses:
         '204':
           description: 'There is no content to send for this request, but the headers may be useful. '
@@ -206,8 +206,8 @@ components:
       properties:
         id:
           type: string
-          format: uuid
-          description: User ID
+          pattern: '^[0-9A-HJKMNP-TV-Z]{26}$'
+          description: User ID (ULID format)
         name:
           type: string
           minLength: 1

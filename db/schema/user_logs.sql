@@ -1,7 +1,7 @@
 -- User logs table
 CREATE TABLE IF NOT EXISTS user_logs (
-    id VARCHAR(36) PRIMARY KEY,
-    user_id VARCHAR(36) NOT NULL,
+    id VARCHAR(26) PRIMARY KEY,
+    user_id VARCHAR(26) NOT NULL,
     action VARCHAR(50) NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );

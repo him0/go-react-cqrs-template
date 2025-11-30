@@ -10,4 +10,7 @@ require (
 	github.com/oapi-codegen/runtime v1.1.1
 )
 
-require github.com/apapsch/go-jsonmerge/v2 v2.0.0 // indirect
+require (
+	github.com/apapsch/go-jsonmerge/v2 v2.0.0 // indirect
+	github.com/oklog/ulid/v2 v2.1.1 // indirect
+)
