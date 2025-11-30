@@ -10,12 +10,15 @@ import (
 
 type Querier interface {
 	CountUsers(ctx context.Context) (int64, error)
+	CountUserLogsByUserID(ctx context.Context, userID string) (int64, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) error
+	CreateUserLog(ctx context.Context, arg CreateUserLogParams) error
 	DeleteUser(ctx context.Context, id string) error
 	GetUserByEmail(ctx context.Context, email string) (User, error)
 	GetUserByEmailForUpdate(ctx context.Context, email string) (User, error)
 	GetUserByID(ctx context.Context, id string) (User, error)
 	GetUserByIDForUpdate(ctx context.Context, id string) (User, error)
+	GetUserLogsByUserID(ctx context.Context, arg GetUserLogsByUserIDParams) ([]UserLog, error)
 	ListUsers(ctx context.Context, arg ListUsersParams) ([]User, error)
 	UpdateUser(ctx context.Context, arg UpdateUserParams) error
 	UpsertUser(ctx context.Context, arg UpsertUserParams) error

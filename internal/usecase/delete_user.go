@@ -37,6 +37,12 @@ func (u *DeleteUserUsecase) Execute(ctx context.Context, id string) error {
 			return domain.ErrUserNotFound(id)
 		}
 
+		// ユーザー削除ログを保存
+		userLog := domain.NewUserLog(id, domain.UserLogActionDeleted)
+		if err := command.SaveUserLog(ctx, tx, userLog); err != nil {
+			return err
+		}
+
 		// 削除
 		return command.Delete(ctx, tx, id)
 	})
