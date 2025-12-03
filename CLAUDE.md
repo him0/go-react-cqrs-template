@@ -32,15 +32,18 @@ internal/
   queryservice/   # Read操作
   usecase/        # ビジネスロジック
   handler/        # HTTPハンドラー
+    validation/   # OpenAPIバリデーションミドルウェア
   infrastructure/ # DB接続, DAO (sqlc生成)
   pkg/
     logger/       # slogベースのロガー
     errors/       # AppError
+pkg/
+  generated/      # oapi-codegen生成コード
 db/
   schema/         # テーブル定義 (psqldef)
   queries/        # sqlc用SQL
 typespec/         # API定義 (TypeSpec)
-openapi/          # 生成されたOpenAPI仕様
+openapi/          # 生成されたOpenAPI仕様 + embed.go (バリデーション用)
 ```
 
 ### Frontend
@@ -62,6 +65,7 @@ web/
 - **CQRS分離**: Read(queryservice) / Write(command)
 - **トランザクション**: `txManager.RunInTransaction()` でusecase層から制御
 - **FOR UPDATE**: Race Condition防止用の行ロック
+- **APIバリデーション**: OpenAPI定義から自動バリデーション (kin-openapi)
 
 ### Frontend
 - **データフェッチ**: TanStack Query + Orval生成のhooks

@@ -6,10 +6,12 @@ import (
 	"os"
 
 	"github.com/example/go-react-cqrs-template/internal/handler"
+	"github.com/example/go-react-cqrs-template/internal/handler/validation"
 	"github.com/example/go-react-cqrs-template/internal/infrastructure"
 	"github.com/example/go-react-cqrs-template/internal/pkg/logger"
 	"github.com/example/go-react-cqrs-template/internal/queryservice"
 	"github.com/example/go-react-cqrs-template/internal/usecase"
+	openapispec "github.com/example/go-react-cqrs-template/openapi"
 	"github.com/example/go-react-cqrs-template/pkg/generated/openapi"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -89,8 +91,20 @@ func main() {
 		slog.String("cors_origin", "http://localhost:3000"),
 	)
 
+	// OpenAPIバリデーションミドルウェアの初期化
+	validationMiddleware, err := validation.NewMiddleware(openapispec.Spec)
+	if err != nil {
+		log.Error("failed to create validation middleware",
+			slog.String("error", err.Error()),
+		)
+		os.Exit(1)
+	}
+	log.Info("OpenAPI validation middleware initialized")
+
 	// OpenAPI生成のハンドラーを使用してAPIルートを設定
 	r.Route("/api/v1", func(r chi.Router) {
+		// OpenAPI仕様に基づくリクエストバリデーション
+		r.Use(validationMiddleware.Handler)
 		// OpenAPI仕様に従ったルーティングを自動生成
 		openapi.HandlerFromMux(userHandler, r)
 	})
