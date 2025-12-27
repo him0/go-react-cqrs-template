@@ -14,8 +14,7 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   /* 並列ワーカー数 */
   workers: process.env.CI ? 1 : undefined,
-  /* レポーター設定 */
-  reporter: process.env.CI ? 'github' : 'html',
+  reporter: process.env.CI ? [['github'], ['html']] : 'html',
   /* 全テスト共通設定 */
   use: {
     /* ベースURL */
