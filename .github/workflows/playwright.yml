@@ -30,6 +30,10 @@ jobs:
         working-directory: web
         run: npx playwright install --with-deps chromium
 
+      - name: Build
+        working-directory: web
+        run: npm run build
+
       - name: Run Playwright tests
         working-directory: web
         run: npm run e2e
