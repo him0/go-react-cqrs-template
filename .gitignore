@@ -27,6 +27,11 @@ web/.env.production.local
 coverage.out
 web/coverage/
 
+# Playwright
+web/playwright-report/
+web/playwright/.cache/
+web/test-results/
+
 # IDE
 .idea/
 *.swp
