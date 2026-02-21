@@ -63,7 +63,11 @@ func main() {
 		)
 		os.Exit(1)
 	}
-	defer db.Close()
+	defer func() {
+		if closeErr := db.Close(); closeErr != nil {
+			log.Error("failed to close database", slog.String("error", closeErr.Error()))
+		}
+	}()
 
 	log.Info("successfully connected to database")
 

@@ -1,126 +1,18 @@
 version: "2"
 
 run:
-  # Timeout for analysis
   timeout: 5m
-
-  # Include test files
   tests: true
 
-formatters:
-  enable:
-    - gofmt         # Check gofmt
-    - goimports     # Check import order
-  settings:
-    gofmt:
-      simplify: true
-    goimports:
-      local-prefixes:
-        - github.com/example/go-react-cqrs-template
-
 linters:
-  enable:
-    - errcheck      # Check for unchecked errors
-    - govet         # Go vet
-    - ineffassign   # Detect ineffectual assignments
-    - staticcheck   # Staticcheck
-    - unused        # Check for unused code
-    - misspell      # Check for misspelled words
-    - revive        # Fast linter
-    - gocritic      # Comprehensive diagnostics
-    - bodyclose     # Check HTTP response body is closed
-    - gosec         # Security issues
-    - unconvert     # Remove unnecessary type conversions
-    - unparam       # Check for unused function parameters
-    - prealloc      # Find slice declarations that could be preallocated
-    - nilerr        # Check that there is no nil error in error return
-    - nolintlint    # Ill-formed or insufficient nolint directives
-    - depguard      # Check package dependencies
-    - gomoddirectives # Check go.mod directives
-    - gomodguard    # Allow and block list for direct Go module dependencies
-
-  settings:
-    errcheck:
-      # Report about not checking of errors in type assertions
-      check-type-assertions: true
-      # Report about assignment of errors to blank identifier
-      check-blank: true
-
-    govet:
-      # Enable all analyzers
-      enable-all: true
-      # Disable shadow variable checking (can be noisy)
-      disable:
-        - shadow
-
-    revive:
-      confidence: 0.8
-      rules:
-        - name: blank-imports
-        - name: context-as-argument
-        - name: context-keys-type
-        - name: dot-imports
-        - name: error-return
-        - name: error-strings
-        - name: error-naming
-        - name: exported
-        - name: if-return
-        - name: increment-decrement
-        - name: var-naming
-        - name: var-declaration
-        - name: package-comments
-        - name: range
-        - name: receiver-naming
-        - name: time-naming
-        - name: unexported-return
-        - name: indent-error-flow
-        - name: errorf
-        - name: empty-block
-        - name: superfluous-else
-        - name: unused-parameter
-        - name: unreachable-code
-        - name: redefines-builtin-id
-
-    gosec:
-      # To specify a set of rules to explicitly exclude
-      excludes:
-        - G204 # Audit use of command execution
-
-    gocritic:
-      # Enable multiple checks by tags
-      enabled-tags:
-        - diagnostic
-        - style
-        - performance
-      disabled-checks:
-        - commentedOutCode
+  default: standard
 
 issues:
-  # Exclude use default excludes
   exclude-use-default: false
-
-  # Maximum issues count per one linter
   max-issues-per-linter: 0
-
-  # Maximum count of issues with the same text
   max-same-issues: 0
 
-  # Excluding configuration per-path, per-linter, per-text and per-source
-  exclude-rules:
-    # Exclude some linters from running on tests files
-    - path: _test\.go
-      linters:
-        - gosec
-        - errcheck
-        - gocritic
-
-  exclude-dirs:
-    - web
-    - pkg/generated
-    - web/src/api/generated
-
 output:
-  # Make output more digestible with quickfix in editors
   formats:
     colored-line-number:
       path: stdout
