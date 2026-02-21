@@ -20,7 +20,7 @@ const emailPattern = `^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$`
 
 func init() {
 	// email format のカスタムバリデーションを登録
-	openapi3.DefineStringFormat("email", emailPattern)
+	openapi3.DefineStringFormatValidator("email", openapi3.NewRegexpFormatValidator(emailPattern))
 }
 
 // ValidationError はバリデーションエラーの詳細を保持する
@@ -144,7 +144,9 @@ func handleValidationError(w http.ResponseWriter, err error) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusBadRequest)
-	json.NewEncoder(w).Encode(validationErr)
+	if err := json.NewEncoder(w).Encode(validationErr); err != nil {
+		return
+	}
 }
 
 // extractValidationDetail はエラーからフィールド情報を抽出する
