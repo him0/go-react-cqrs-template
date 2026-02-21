@@ -7,6 +7,7 @@ import (
 	"strconv"
 
 	"github.com/example/go-react-cqrs-template/internal/handler"
+	handlermw "github.com/example/go-react-cqrs-template/internal/handler/middleware"
 	"github.com/example/go-react-cqrs-template/internal/handler/validation"
 	"github.com/example/go-react-cqrs-template/internal/infrastructure"
 	"github.com/example/go-react-cqrs-template/internal/pkg/logger"
@@ -87,6 +88,7 @@ func main() {
 		AllowCredentials: true,
 		MaxAge:           300,
 	}))
+	r.Use(handlermw.SecurityHeaders)
 
 	log.Info("middleware configured",
 		slog.String("cors_origin", "http://localhost:3000"),
