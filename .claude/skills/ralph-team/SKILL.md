@@ -1,21 +1,21 @@
 ---
 name: ralph-team
-description: "Ralph Team: Agent Teams による並列タスク自動実行。ralph-team-tasks/*.md に定義されたタスクを worktree 隔離されたワーカーで並列実行し、各タスクを独立した PR として完成させる。"
+description: "Ralph Team: worktree 隔離されたワーカーによる並列タスク自動実行。ralph-team-tasks/*.md に定義されたタスクを独立した worktree で並列実行し、各タスクを独立した PR として完成させる。"
 disable-model-invocation: true
-allowed-tools: Bash, Read, Write, Edit, Glob, Grep, Task, TaskCreate, TaskUpdate, TaskList, TaskGet, TeamCreate, TeamDelete, SendMessage
+allowed-tools: Bash, Read, Write, Edit, Glob, Grep, Task, TaskOutput
 argument-hint: "[--concurrency N] [--tasks 01,02,03|all] [--dry-run]"
 ---
 
 # Ralph Team リーダー
 
-あなたは Ralph Team のリーダーです。`ralph-team-tasks/*.md` に定義されたタスクを Agent Teams で並列実行し、各タスクを独立した PR として完成させます。
+あなたは Ralph Team のリーダーです。`ralph-team-tasks/*.md` に定義されたタスクを worktree 隔離されたワーカーで並列実行し、各タスクを独立した PR として完成させます。
 
 ## 引数の解析
 
 ユーザーの入力 `$ARGUMENTS` から以下のオプションを解析してください:
 - `--concurrency N` : 同時実行ワーカー数（デフォルト: 3）
 - `--tasks "01,02,03"` または `all` : 実行するタスク番号（デフォルト: all）
-- `--dry-run` : 実行計画の表示のみ（チーム作成しない）
+- `--dry-run` : 実行計画の表示のみ（ワーカー起動しない）
 - `--retry-failed` : 前回失敗したタスクも再実行対象にする
 
 ## 実行手順
@@ -44,8 +44,8 @@ argument-hint: "[--concurrency N] [--tasks 01,02,03|all] [--dry-run]"
 - エントリなし → **未着手**: スケジュール対象
 
 **ステート更新タイミング**:
-- ワーカーが PR 作成 & auto-merge 設定完了 → リーダーが `"done"` を書き込み
-- ワーカーが3回リトライ後も失敗 → リーダーが `"failed"` を書き込み
+- ワーカーの TaskOutput 結果から PR URL を抽出 → リーダーが `"done"` を書き込み
+- ワーカーが失敗を報告 → リーダーが `"failed"` を書き込み
 
 完了状態をユーザーに表示する:
 ```
@@ -89,28 +89,21 @@ Batch 6: 10 (RequestID)                                    ← 最後（広範�
 `--dry-run` が指定されている場合:
 1. スケジュール（バッチ割り当て）を表示
 2. 各バッチの実行順序と理由を説明
-3. チーム作成せずに終了
+3. ワーカー起動せずに終了
 
-### Step 5: チーム作成 & タスク登録
+### Step 5: ワーカー生成（バッチ単位）
 
-```
-TeamCreate: team_name="ralph-team"
-```
+現在のバッチのタスクに対して、Task ツールでワーカーをバックグラウンド起動する。
 
-各タスクを TaskCreate で登録し、依存関係（blockedBy）を設定する:
-- Batch 2 のタスクは Batch 1 の全タスク完了を待つ
-- Batch N のタスクは Batch N-1 の全タスク完了を待つ
+**重要な制約**: `team_name` と `isolation: "worktree"` は併用できない。`team_name` を指定すると worktree 隔離が無視される。そのため、ワーカーはチームに所属させず、`run_in_background: true` + `isolation: "worktree"` で独立起動する。
 
-### Step 6: ワーカー生成（バッチ単位）
-
-現在のバッチのタスクに対して、Task ツールでワーカーを生成する。
-ワーカーは `.claude/agents/ralph-worker.md` で定義されたカスタムエージェントを使用し、`isolation: "worktree"` で git 隔離される:
+各バッチのワーカーを **1つのメッセージ内で並列に** Task ツールを呼び出して起動する:
 
 ```
 Task(
   subagent_type: "ralph-worker",
-  team_name: "ralph-team",
-  name: "worker-{task-number}",
+  isolation: "worktree",              ← 必須: git worktree 隔離
+  run_in_background: true,            ← 必須: バックグラウンド実行
   prompt: "以下のタスクを実装してください。
 
 タスク番号: {number}
@@ -118,26 +111,41 @@ Task(
 
 タスクファイルの内容を読み込み、指示に従って実装・検証・PR作成・auto-merge まで完了してください。
 
-完了したら TaskUpdate でタスクを completed にし、SendMessage でリーダーに PR URL を報告してください。"
+最終行に PR URL を出力してください（例: PR: https://github.com/...）。
+失敗した場合は最終行に FAILED: {理由} を出力してください。"
 )
 ```
 
-**重要**: `ralph-worker` エージェントは `isolation: worktree` が設定されているため、Task ツール側で `isolation` を指定する必要はない。エージェント定義の frontmatter で自動的に worktree 隔離される。
+**注意事項**:
+- `team_name` は指定しない（worktree 隔離と非互換のため）
+- `name` は指定しない（チーム機能を使わないため不要）
+- ワーカーへの SendMessage は使わない（チーム非所属のため利用不可）
+- 各ワーカーの結果は TaskOutput で取得する
 
-### Step 7: ワーカー管理 & ステート更新
+### Step 6: バッチ完了待ち & ステート更新
 
-- ワーカーからのメッセージを受信して進捗を追跡
-- ワーカーが成功を報告 → `ralph-team-tasks/state.json` に `"done"` + PR URL を書き込み
-- ワーカーが失敗を報告 → `ralph-team-tasks/state.json` に `"failed"` + 理由を書き込み
-- **ステートは各ワーカー完了時に即座に書き込む**（セッション断でも進捗が残る）
-- ワーカーが完了したら shutdown_request を送信
-- バッチ内の全ワーカーが完了したら、次バッチのワーカーを生成
+バッチ内の全ワーカーに対して `TaskOutput` で完了を待つ。
 
-### Step 8: 最終レポート
+各ワーカーの完了時:
+1. TaskOutput の結果から PR URL または失敗理由を抽出
+2. `ralph-team-tasks/state.json` に即座に書き込む:
+   - 成功: `{ "status": "done", "pr": "#{number}", "finished_at": "..." }`
+   - 失敗: `{ "status": "failed", "reason": "...", "finished_at": "..." }`
+3. 全ワーカー完了後、次バッチのワーカーを生成
+
+**TaskOutput の使い方**:
+```
+TaskOutput(task_id: "{agent_id}", block: true, timeout: 600000)
+```
+- `block: true` で完了まで待機
+- `timeout: 600000` (10分) で十分な時間を確保
+- バッチ内の各ワーカーの TaskOutput を順番に待つ
+
+### Step 7: 最終レポート
 
 全バッチ完了後:
 1. 各タスクの結果をサマリー表示（成功/失敗/PR URL）
-2. TeamDelete でチームをクリーンアップ
+2. `ralph-team-tasks/state.json` の最終状態を確認
 
 ## 出力フォーマット
 
