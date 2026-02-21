@@ -20,9 +20,10 @@ if ! command -v task &>/dev/null; then
 fi
 
 # sqlc (SQL code generator)
-if ! command -v sqlc &>/dev/null; then
-  echo "Installing sqlc..."
-  curl -sL https://github.com/sqlc-dev/sqlc/releases/download/v1.28.0/sqlc_1.28.0_linux_amd64.tar.gz \
+SQLC_VERSION="1.30.0"
+if ! command -v sqlc &>/dev/null || [ "$(sqlc version)" != "v${SQLC_VERSION}" ]; then
+  echo "Installing sqlc v${SQLC_VERSION}..."
+  curl -sL "https://github.com/sqlc-dev/sqlc/releases/download/v${SQLC_VERSION}/sqlc_${SQLC_VERSION}_linux_amd64.tar.gz" \
     | tar xz -C /usr/local/bin sqlc
 fi
 
