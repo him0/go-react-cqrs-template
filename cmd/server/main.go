@@ -1,10 +1,14 @@
 package main
 
 import (
+	"context"
 	"log/slog"
 	"net/http"
 	"os"
+	"os/signal"
 	"strconv"
+	"syscall"
+	"time"
 
 	"github.com/example/go-react-cqrs-template/internal/handler"
 	"github.com/example/go-react-cqrs-template/internal/handler/validation"
@@ -49,7 +53,11 @@ func main() {
 		)
 		os.Exit(1)
 	}
-	defer db.Close()
+	defer func() {
+		if closeErr := db.Close(); closeErr != nil {
+			log.Error("failed to close database", slog.String("error", closeErr.Error()))
+		}
+	}()
 
 	log.Info("successfully connected to database")
 
@@ -115,19 +123,40 @@ func main() {
 		openapi.HandlerFromMux(userHandler, r)
 	})
 
+	// シグナルハンドリングの設定
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
 	// サーバー起動
 	port := getEnv("PORT", "8080")
-	log.Info("server starting",
-		slog.String("port", port),
-		slog.String("address", ":"+port),
-	)
-	if err := http.ListenAndServe(":"+port, r); err != nil {
-		log.Error("server failed to start",
-			slog.String("error", err.Error()),
+	srv := &http.Server{Addr: ":" + port, Handler: r}
+
+	go func() {
+		log.Info("server starting",
 			slog.String("port", port),
+			slog.String("address", ":"+port),
 		)
-		os.Exit(1)
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Error("server error",
+				slog.String("error", err.Error()),
+				slog.String("port", port),
+			)
+			os.Exit(1)
+		}
+	}()
+
+	// シグナル受信を待機
+	<-ctx.Done()
+	log.Info("shutting down server...")
+
+	// Graceful shutdown（タイムアウト: 30秒）
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	if err := srv.Shutdown(shutdownCtx); err != nil {
+		log.Error("server shutdown error", slog.String("error", err.Error()))
 	}
+	log.Info("server stopped")
 }
 
 // getEnv 環境変数を取得、なければデフォルト値を返す

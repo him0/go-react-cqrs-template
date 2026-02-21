@@ -89,10 +89,7 @@ function Users() {
     },
   })
 
-  const {
-    mutate: deleteUser,
-    isPending: isDeleting,
-  } = useUsersDeleteUser({
+  const { mutate: deleteUser, isPending: isDeleting } = useUsersDeleteUser({
     mutation: {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: getUsersListUsersQueryKey() })
