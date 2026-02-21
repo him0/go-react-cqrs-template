@@ -1,5 +1,7 @@
-import { useState } from 'react'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
 import type { CreateUserRequest } from '../api/generated/models'
+import { createUserSchema, type CreateUserFormValues } from '../lib/validations/user'
 
 export interface UserCreateFormProps {
   onSubmit: (data: CreateUserRequest) => void
@@ -16,17 +18,26 @@ export function UserCreateForm({
   isSuccess,
   errorMessage,
 }: UserCreateFormProps) {
-  const [formData, setFormData] = useState<CreateUserRequest>({ name: '', email: '' })
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<CreateUserFormValues>({
+    resolver: zodResolver(createUserSchema),
+    defaultValues: {
+      name: '',
+      email: '',
+    },
+  })
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    onSubmit(formData)
+  const onFormSubmit = (data: CreateUserFormValues) => {
+    onSubmit(data)
   }
 
   return (
     <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-6">
       <h2 className="text-xl font-semibold mb-4">Create New User</h2>
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-4">
         <div>
           <label htmlFor="name" className="block text-sm font-medium mb-1">
             Name
@@ -34,26 +45,32 @@ export function UserCreateForm({
           <input
             type="text"
             id="name"
-            value={formData.name}
-            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+            {...register('name')}
             className="w-full px-3 py-2 border rounded-md bg-background"
-            required
-            minLength={1}
-            maxLength={100}
+            aria-required="true"
           />
+          {errors.name && (
+            <p className="text-red-600 text-sm mt-1" role="alert">
+              {errors.name.message}
+            </p>
+          )}
         </div>
         <div>
           <label htmlFor="email" className="block text-sm font-medium mb-1">
             Email
           </label>
           <input
-            type="email"
+            type="text"
             id="email"
-            value={formData.email}
-            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+            {...register('email')}
             className="w-full px-3 py-2 border rounded-md bg-background"
-            required
+            aria-required="true"
           />
+          {errors.email && (
+            <p className="text-red-600 text-sm mt-1" role="alert">
+              {errors.email.message}
+            </p>
+          )}
         </div>
         <div className="flex gap-2">
           <button

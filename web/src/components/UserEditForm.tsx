@@ -1,5 +1,7 @@
-import { useState } from 'react'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
 import type { User, UpdateUserRequest } from '../api/generated/models'
+import { updateUserSchema, type UpdateUserFormValues } from '../lib/validations/user'
 
 export interface UserEditFormProps {
   user: User
@@ -20,18 +22,24 @@ export function UserEditForm({
   isSuccess,
   errorMessage,
 }: UserEditFormProps) {
-  const [formData, setFormData] = useState<UpdateUserRequest>({
-    name: user.name,
-    email: user.email,
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<UpdateUserFormValues>({
+    resolver: zodResolver(updateUserSchema),
+    defaultValues: {
+      name: user.name,
+      email: user.email,
+    },
   })
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    onSubmit(user.id, formData)
+  const onFormSubmit = (data: UpdateUserFormValues) => {
+    onSubmit(user.id, data)
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-4">
       <div>
         <label className="text-sm font-medium text-muted-foreground">ID</label>
         <p className="font-mono text-sm bg-muted p-2 rounded">{user.id}</p>
@@ -43,24 +51,30 @@ export function UserEditForm({
         <input
           type="text"
           id="edit-name"
-          value={formData.name || ''}
-          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+          {...register('name')}
           className="w-full px-3 py-2 border rounded-md bg-background"
-          minLength={1}
-          maxLength={100}
         />
+        {errors.name && (
+          <p className="text-red-600 text-sm mt-1" role="alert">
+            {errors.name.message}
+          </p>
+        )}
       </div>
       <div>
         <label htmlFor="edit-email" className="block text-sm font-medium mb-1">
           Email
         </label>
         <input
-          type="email"
+          type="text"
           id="edit-email"
-          value={formData.email || ''}
-          onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+          {...register('email')}
           className="w-full px-3 py-2 border rounded-md bg-background"
         />
+        {errors.email && (
+          <p className="text-red-600 text-sm mt-1" role="alert">
+            {errors.email.message}
+          </p>
+        )}
       </div>
       <div>
         <label className="text-sm font-medium text-muted-foreground">Created At</label>

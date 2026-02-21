@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { render, screen } from '@/test/utils'
+import { render, screen, waitFor } from '@/test/utils'
 import userEvent from '@testing-library/user-event'
 import { UserEditForm } from './UserEditForm'
 import type { User } from '../api/generated/models'
@@ -59,9 +59,11 @@ describe('UserEditForm', () => {
 
     await user.click(screen.getByRole('button', { name: /^update$/i }))
 
-    expect(onSubmit).toHaveBeenCalledWith('123', {
-      name: 'Jane Smith',
-      email: 'jane@example.com',
+    await waitFor(() => {
+      expect(onSubmit).toHaveBeenCalledWith('123', {
+        name: 'Jane Smith',
+        email: 'jane@example.com',
+      })
     })
   })
 
@@ -209,5 +211,58 @@ describe('UserEditForm', () => {
 
     expect(screen.getByDisplayValue('Jane Smith')).toBeInTheDocument()
     expect(screen.getByDisplayValue('jane@example.com')).toBeInTheDocument()
+  })
+
+  it('should show validation error when name is cleared', async () => {
+    const user = userEvent.setup()
+    const onSubmit = vi.fn()
+    const onCancel = vi.fn()
+
+    render(
+      <UserEditForm
+        user={mockUser}
+        onSubmit={onSubmit}
+        onCancel={onCancel}
+        isPending={false}
+        isError={false}
+        isSuccess={false}
+      />
+    )
+
+    const nameInput = screen.getByLabelText(/name/i)
+    await user.clear(nameInput)
+    await user.click(screen.getByRole('button', { name: /^update$/i }))
+
+    await waitFor(() => {
+      expect(screen.getByText('名前は必須です')).toBeInTheDocument()
+    })
+    expect(onSubmit).not.toHaveBeenCalled()
+  })
+
+  it('should show validation error for invalid email', async () => {
+    const user = userEvent.setup()
+    const onSubmit = vi.fn()
+    const onCancel = vi.fn()
+
+    render(
+      <UserEditForm
+        user={mockUser}
+        onSubmit={onSubmit}
+        onCancel={onCancel}
+        isPending={false}
+        isError={false}
+        isSuccess={false}
+      />
+    )
+
+    const emailInput = screen.getByLabelText(/email/i)
+    await user.clear(emailInput)
+    await user.type(emailInput, 'invalid-email')
+    await user.click(screen.getByRole('button', { name: /^update$/i }))
+
+    await waitFor(() => {
+      expect(screen.getByText('有効なメールアドレスを入力してください')).toBeInTheDocument()
+    })
+    expect(onSubmit).not.toHaveBeenCalled()
   })
 })

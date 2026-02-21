@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { render, screen } from '@/test/utils'
+import { render, screen, waitFor } from '@/test/utils'
 import userEvent from '@testing-library/user-event'
 import { UserCreateForm } from './UserCreateForm'
 
@@ -28,9 +28,11 @@ describe('UserCreateForm', () => {
     await user.type(screen.getByLabelText(/email/i), 'john@example.com')
     await user.click(screen.getByRole('button', { name: /create$/i }))
 
-    expect(onSubmit).toHaveBeenCalledWith({
-      name: 'John Doe',
-      email: 'john@example.com',
+    await waitFor(() => {
+      expect(onSubmit).toHaveBeenCalledWith({
+        name: 'John Doe',
+        email: 'john@example.com',
+      })
     })
   })
 
@@ -100,14 +102,48 @@ describe('UserCreateForm', () => {
     expect(emailInput).toHaveValue('test@example.com')
   })
 
-  it('should have required validation on fields', () => {
+  it('should show validation errors for empty fields', async () => {
+    const user = userEvent.setup()
     const onSubmit = vi.fn()
 
     render(
       <UserCreateForm onSubmit={onSubmit} isPending={false} isError={false} isSuccess={false} />
     )
 
-    expect(screen.getByLabelText(/name/i)).toBeRequired()
-    expect(screen.getByLabelText(/email/i)).toBeRequired()
+    await user.click(screen.getByRole('button', { name: /create$/i }))
+
+    await waitFor(() => {
+      expect(screen.getByText('名前は必須です')).toBeInTheDocument()
+    })
+    expect(onSubmit).not.toHaveBeenCalled()
+  })
+
+  it('should show validation error for invalid email', async () => {
+    const user = userEvent.setup()
+    const onSubmit = vi.fn()
+
+    render(
+      <UserCreateForm onSubmit={onSubmit} isPending={false} isError={false} isSuccess={false} />
+    )
+
+    await user.type(screen.getByLabelText(/name/i), 'John Doe')
+    await user.type(screen.getByLabelText(/email/i), 'invalid-email')
+    await user.click(screen.getByRole('button', { name: /create$/i }))
+
+    await waitFor(() => {
+      expect(screen.getByText('有効なメールアドレスを入力してください')).toBeInTheDocument()
+    })
+    expect(onSubmit).not.toHaveBeenCalled()
+  })
+
+  it('should have aria-required attribute on fields', () => {
+    const onSubmit = vi.fn()
+
+    render(
+      <UserCreateForm onSubmit={onSubmit} isPending={false} isError={false} isSuccess={false} />
+    )
+
+    expect(screen.getByLabelText(/name/i)).toHaveAttribute('aria-required', 'true')
+    expect(screen.getByLabelText(/email/i)).toHaveAttribute('aria-required', 'true')
   })
 })
