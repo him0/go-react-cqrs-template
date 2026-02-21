@@ -1,0 +1,8 @@
+node_modules
+web/node_modules
+web/dist
+bin/
+tmp/
+.git
+*.md
+coverage.out
