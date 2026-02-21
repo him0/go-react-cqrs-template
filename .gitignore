@@ -38,6 +38,9 @@ web/test-results/
 *.swo
 *~
 
+# Ralph Team state
+ralph-team-tasks/state.json
+
 # OS
 .DS_Store
 Thumbs.db
