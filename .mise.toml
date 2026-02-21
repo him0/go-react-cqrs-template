@@ -3,7 +3,7 @@
 
 [tools]
 # Backend
-go = "1.25.3"
+go = "1.26.0"
 "go:github.com/air-verse/air" = "latest"
 "go:github.com/go-task/task/v3/cmd/task" = "latest"
 
@@ -15,8 +15,8 @@ go = "1.25.3"
 "go:github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen" = "latest"
 
 # Frontend
-node = "24.11.0"
-pnpm = "10.20.0"
+node = "24.13.1"
+pnpm = "10.30.1"
 
 [settings]
 # Automatically activate when entering this directory
