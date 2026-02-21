@@ -2,10 +2,12 @@ package usecase
 
 import (
 	"context"
+	"log/slog"
 
 	"github.com/example/go-react-cqrs-template/internal/command"
 	"github.com/example/go-react-cqrs-template/internal/domain"
 	"github.com/example/go-react-cqrs-template/internal/infrastructure"
+	"github.com/example/go-react-cqrs-template/internal/pkg/logger"
 )
 
 // CreateUserUsecase ユーザー作成ユースケース
@@ -27,6 +29,9 @@ func NewCreateUserUsecase(
 
 // Execute ユーザーを作成
 func (u *CreateUserUsecase) Execute(ctx context.Context, name, email string) error {
+	log := logger.FromContext(ctx)
+	log.Info("creating user", slog.String("email", email))
+
 	return u.txManager.RunInTransaction(ctx, func(ctx context.Context, tx infrastructure.DBTX) error {
 		// メールアドレスの重複チェック（ロック付き）
 		existingUser, err := command.FindByEmailForUpdate(ctx, tx, email)

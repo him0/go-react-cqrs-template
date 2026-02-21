@@ -18,6 +18,9 @@ func Middleware(next http.Handler) http.Handler {
 		ctx := WithRequestID(r.Context(), requestID)
 		r = r.WithContext(ctx)
 
+		// レスポンスヘッダーにリクエストIDを追加
+		w.Header().Set("X-Request-ID", requestID)
+
 		// レスポンスライターをラップして、ステータスコードを記録できるようにする
 		wrapped := &responseWriter{
 			ResponseWriter: w,

@@ -74,7 +74,6 @@ func main() {
 		listUsersUsecase,
 		updateUserUsecase,
 		deleteUserUsecase,
-		log,
 	)
 
 	// ルーターの設定

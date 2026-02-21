@@ -2,10 +2,12 @@ package usecase
 
 import (
 	"context"
+	"log/slog"
 
 	"github.com/example/go-react-cqrs-template/internal/command"
 	"github.com/example/go-react-cqrs-template/internal/domain"
 	"github.com/example/go-react-cqrs-template/internal/infrastructure"
+	"github.com/example/go-react-cqrs-template/internal/pkg/logger"
 )
 
 // DeleteUserUsecase ユーザー削除ユースケース
@@ -27,6 +29,9 @@ func NewDeleteUserUsecase(
 
 // Execute ユーザーを削除
 func (u *DeleteUserUsecase) Execute(ctx context.Context, id string) error {
+	log := logger.FromContext(ctx)
+	log.Info("deleting user", slog.String("user_id", id))
+
 	return u.txManager.RunInTransaction(ctx, func(ctx context.Context, tx infrastructure.DBTX) error {
 		// 行ロック付きで存在確認
 		user, err := command.FindByIDForUpdate(ctx, tx, id)
