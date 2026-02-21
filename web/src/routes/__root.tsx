@@ -1,8 +1,15 @@
 import { createRootRoute, Link, Outlet } from '@tanstack/react-router'
 import { TanStackRouterDevtools } from '@tanstack/router-devtools'
+import { useEffect } from 'react'
+import { ThemeToggle } from '@/components/ThemeToggle'
+import { initTheme } from '@/lib/theme'
 
-export const Route = createRootRoute({
-  component: () => (
+function RootComponent() {
+  useEffect(() => {
+    initTheme()
+  }, [])
+
+  return (
     <div className="min-h-screen bg-background">
       <nav className="border-b">
         <div className="container mx-auto px-4 py-4">
@@ -28,6 +35,9 @@ export const Route = createRootRoute({
                 About
               </Link>
             </div>
+            <div className="ml-auto">
+              <ThemeToggle />
+            </div>
           </div>
         </div>
       </nav>
@@ -36,5 +46,9 @@ export const Route = createRootRoute({
       </main>
       <TanStackRouterDevtools />
     </div>
-  ),
+  )
+}
+
+export const Route = createRootRoute({
+  component: RootComponent,
 })
