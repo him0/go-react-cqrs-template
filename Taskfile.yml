@@ -43,12 +43,12 @@ tasks:
   db:migrate:
     desc: psqldefを使用してデータベースマイグレーションを実行
     cmds:
-      - psqldef -U {{.DB_USER}} -p {{.DB_PORT}} -h {{.DB_HOST}} {{.DB_NAME}} --password={{.DB_PASSWORD}} --file=db/schema/schema.sql
+      - cat db/schema/*.sql | psqldef -U {{.DB_USER}} -p {{.DB_PORT}} -h {{.DB_HOST}} {{.DB_NAME}} --password={{.DB_PASSWORD}}
 
   db:dry-run:
     desc: データベースマイグレーションのドライラン
     cmds:
-      - psqldef -U {{.DB_USER}} -p {{.DB_PORT}} -h {{.DB_HOST}} {{.DB_NAME}} --password={{.DB_PASSWORD}} --file=db/schema/schema.sql --dry-run
+      - cat db/schema/*.sql | psqldef -U {{.DB_USER}} -p {{.DB_PORT}} -h {{.DB_HOST}} {{.DB_NAME}} --password={{.DB_PASSWORD}} --dry-run
 
   db:export:
     desc: 現在のDBスキーマをエクスポート
@@ -66,7 +66,7 @@ tasks:
         fi
         TIMESTAMP=$(date +%Y%m%d%H%M%S)
         FILENAME="db/migrations/${TIMESTAMP}_{{.NAME}}.sql"
-        psqldef -U {{.DB_USER}} -p {{.DB_PORT}} -h {{.DB_HOST}} {{.DB_NAME}} --password={{.DB_PASSWORD}} --file=db/schema/schema.sql --dry-run > ${FILENAME}
+        cat db/schema/*.sql | psqldef -U {{.DB_USER}} -p {{.DB_PORT}} -h {{.DB_HOST}} {{.DB_NAME}} --password={{.DB_PASSWORD}} --dry-run > ${FILENAME}
         if [ -s ${FILENAME} ]; then
           echo "Migration file created: ${FILENAME}"
           cat ${FILENAME}
@@ -85,6 +85,16 @@ tasks:
     desc: バックエンドサーバーを起動（通常起動、ホットリロードなし）
     cmds:
       - go run cmd/server/main.go
+
+  run:worker:
+    desc: ワーカープロセスを起動
+    cmds:
+      - go run cmd/worker/main.go
+
+  build:worker:
+    desc: ワーカーをビルド
+    cmds:
+      - go build -o bin/worker cmd/worker/main.go
 
   # コード生成関連
   generate:dao:

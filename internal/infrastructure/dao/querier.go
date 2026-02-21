@@ -6,20 +6,31 @@ package dao
 
 import (
 	"context"
+	"database/sql"
 )
 
 type Querier interface {
+	CountJobsByStatus(ctx context.Context, status string) (int64, error)
 	CountUserLogsByUserID(ctx context.Context, userID string) (int64, error)
 	CountUsers(ctx context.Context) (int64, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) error
 	CreateUserLog(ctx context.Context, arg CreateUserLogParams) error
+	DeleteCompletedJobsBefore(ctx context.Context, completedAt sql.NullTime) error
 	DeleteUser(ctx context.Context, id string) error
+	EnqueueJob(ctx context.Context, arg EnqueueJobParams) error
+	FetchJobs(ctx context.Context, limit int32) ([]Job, error)
+	GetJobByID(ctx context.Context, id string) (Job, error)
 	GetUserByEmail(ctx context.Context, email string) (User, error)
 	GetUserByEmailForUpdate(ctx context.Context, email string) (User, error)
 	GetUserByID(ctx context.Context, id string) (User, error)
 	GetUserByIDForUpdate(ctx context.Context, id string) (User, error)
 	GetUserLogsByUserID(ctx context.Context, arg GetUserLogsByUserIDParams) ([]UserLog, error)
+	ListJobsByStatus(ctx context.Context, arg ListJobsByStatusParams) ([]Job, error)
 	ListUsers(ctx context.Context, arg ListUsersParams) ([]User, error)
+	MarkJobCompleted(ctx context.Context, id string) error
+	MarkJobDead(ctx context.Context, arg MarkJobDeadParams) error
+	MarkJobProcessing(ctx context.Context, id string) error
+	MarkJobRetryable(ctx context.Context, arg MarkJobRetryableParams) error
 	UpdateUser(ctx context.Context, arg UpdateUserParams) error
 	UpsertUser(ctx context.Context, arg UpsertUserParams) error
 }

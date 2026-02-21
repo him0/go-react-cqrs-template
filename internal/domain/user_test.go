@@ -6,10 +6,10 @@ import (
 
 func TestNewUser(t *testing.T) {
 	tests := []struct {
-		name    string
+		name     string
 		userName string
-		email   string
-		wantErr bool
+		email    string
+		wantErr  bool
 	}{
 		{
 			name:     "valid user",
@@ -79,8 +79,8 @@ func TestUser_Update(t *testing.T) {
 	originalUpdatedAt := user.UpdatedAt
 
 	tests := []struct {
-		name    string
-		newName string
+		name     string
+		newName  string
 		newEmail string
 	}{
 		{

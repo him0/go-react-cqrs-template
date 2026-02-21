@@ -5,8 +5,25 @@
 package dao
 
 import (
+	"database/sql"
+	"encoding/json"
 	"time"
 )
+
+type Job struct {
+	ID          string          `db:"id" json:"id"`
+	JobType     string          `db:"job_type" json:"job_type"`
+	Payload     json.RawMessage `db:"payload" json:"payload"`
+	Status      string          `db:"status" json:"status"`
+	Attempts    int32           `db:"attempts" json:"attempts"`
+	MaxAttempts int32           `db:"max_attempts" json:"max_attempts"`
+	LastError   sql.NullString  `db:"last_error" json:"last_error"`
+	ScheduledAt time.Time       `db:"scheduled_at" json:"scheduled_at"`
+	StartedAt   sql.NullTime    `db:"started_at" json:"started_at"`
+	CompletedAt sql.NullTime    `db:"completed_at" json:"completed_at"`
+	CreatedAt   time.Time       `db:"created_at" json:"created_at"`
+	UpdatedAt   time.Time       `db:"updated_at" json:"updated_at"`
+}
 
 type User struct {
 	ID        string    `db:"id" json:"id"`
