@@ -14,10 +14,8 @@ CREATE TABLE IF NOT EXISTS jobs (
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- ポーリング用部分インデックス（pending/retryable のみ）
-CREATE INDEX IF NOT EXISTS idx_jobs_pollable
-    ON jobs(scheduled_at ASC)
-    WHERE status IN ('pending', 'retryable');
+-- ポーリング用インデックス
+CREATE INDEX IF NOT EXISTS idx_jobs_scheduled_at ON jobs(scheduled_at);
 
 -- ステータス別クエリ用
 CREATE INDEX IF NOT EXISTS idx_jobs_status ON jobs(status);
