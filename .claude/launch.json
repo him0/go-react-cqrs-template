@@ -3,8 +3,8 @@
   "configurations": [
     {
       "name": "backend",
-      "runtimeExecutable": "go",
-      "runtimeArgs": ["run", "cmd/server/main.go"],
+      "runtimeExecutable": "env",
+      "runtimeArgs": ["DB_PORT=55432", "go", "run", "cmd/server/main.go"],
       "port": 8080
     },
     {
@@ -15,8 +15,8 @@
     },
     {
       "name": "worker",
-      "runtimeExecutable": "go",
-      "runtimeArgs": ["run", "cmd/worker/main.go"],
+      "runtimeExecutable": "env",
+      "runtimeArgs": ["DB_PORT=55432", "go", "run", "cmd/worker/main.go"],
       "port": 0
     }
   ]

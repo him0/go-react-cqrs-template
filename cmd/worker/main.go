@@ -21,7 +21,7 @@ func main() {
 	// データベース接続設定
 	dbConfig := infrastructure.Config{
 		Host:     getEnv("DB_HOST", "localhost"),
-		Port:     getEnvInt("DB_PORT", 5432),
+		Port:     getEnvInt("DB_PORT", 55432),
 		User:     getEnv("DB_USER", "postgres"),
 		Password: getEnv("DB_PASSWORD", "postgres"),
 		DBName:   getEnv("DB_NAME", "app_db"),
