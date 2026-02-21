@@ -135,7 +135,7 @@ export const usersCreateUser = (
 ) => {
       
       
-      return customInstance<User>(
+      return customInstance<void>(
       {url: `/users`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
       data: createUserRequest, signal
@@ -284,7 +284,7 @@ export const usersUpdateUser = (
  ) => {
       
       
-      return customInstance<User>(
+      return customInstance<void>(
       {url: `/users/${userId}`, method: 'PUT',
       headers: {'Content-Type': 'application/json', },
       data: updateUserRequest
