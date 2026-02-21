@@ -1,4 +1,4 @@
-version: '3'
+version: "3"
 
 vars:
   DB_USER: postgres
@@ -17,27 +17,27 @@ tasks:
   podman:up:
     desc: Podmanコンテナを起動
     cmds:
-      - podman-compose up
+      - podman compose up
 
   podman:down:
     desc: Podmanコンテナを停止
     cmds:
-      - podman-compose down
+      - podman compose down
 
   podman:logs:
     desc: Podmanログを表示
     cmds:
-      - podman-compose logs -f
+      - podman compose logs -f
 
   podman:ps:
     desc: Podmanコンテナの状態を表示
     cmds:
-      - podman-compose ps
+      - podman compose ps
 
   podman:restart:
     desc: Podmanコンテナを再起動
     cmds:
-      - podman-compose restart
+      - podman compose restart
 
   # データベース関連
   db:migrate:
@@ -217,10 +217,10 @@ tasks:
     desc: 開発環境を一括起動（DB + バックエンド）
     cmds:
       - echo "開発環境の起動手順："
-      - echo "  1. task podman:up      # PostgreSQLを起動"
-      - echo "  2. task db:migrate     # データベースマイグレーション"
-      - echo "  3. task dev            # バックエンドを起動（別ターミナル）"
+      - echo "  1. task podman:up # PostgreSQLを起動"
+      - echo "  2. task db:migrate # データベースマイグレーション"
+      - echo "  3. task dev # バックエンドを起動（別ターミナル）"
       - echo ""
       - echo "または並列実行："
       - echo "  task podman:up && task db:migrate"
-      - echo "  # 別ターミナルで: task dev"
+      - echo " # 別ターミナルで: task dev"
