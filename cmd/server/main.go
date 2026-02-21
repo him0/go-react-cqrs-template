@@ -92,6 +92,11 @@ func main() {
 		slog.String("cors_origin", "http://localhost:3000"),
 	)
 
+	// ヘルスチェックエンドポイント（バリデーションミドルウェア不要）
+	healthHandler := handler.NewHealthHandler(db)
+	r.Get("/healthz", healthHandler.Liveness)
+	r.Get("/readyz", healthHandler.Readiness)
+
 	// OpenAPIバリデーションミドルウェアの初期化
 	validationMiddleware, err := validation.NewMiddleware(openapispec.Spec)
 	if err != nil {
