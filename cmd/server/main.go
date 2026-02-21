@@ -4,6 +4,7 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"strconv"
 
 	"github.com/example/go-react-cqrs-template/internal/handler"
 	"github.com/example/go-react-cqrs-template/internal/handler/validation"
@@ -25,7 +26,7 @@ func main() {
 	// データベース接続設定
 	dbConfig := infrastructure.Config{
 		Host:     getEnv("DB_HOST", "localhost"),
-		Port:     5432,
+		Port:     getEnvInt("DB_PORT", 55432),
 		User:     getEnv("DB_USER", "postgres"),
 		Password: getEnv("DB_PASSWORD", "postgres"),
 		DBName:   getEnv("DB_NAME", "app_db"),
@@ -131,4 +132,17 @@ func getEnv(key, defaultValue string) string {
 		return defaultValue
 	}
 	return value
+}
+
+// getEnvInt 環境変数をint型で取得、なければデフォルト値を返す
+func getEnvInt(key string, defaultValue int) int {
+	value := os.Getenv(key)
+	if value == "" {
+		return defaultValue
+	}
+	v, err := strconv.Atoi(value)
+	if err != nil {
+		return defaultValue
+	}
+	return v
 }
