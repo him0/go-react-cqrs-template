@@ -9,7 +9,10 @@
  * User model
  */
 export interface User {
-  /** User ID */
+  /**
+   * User ID (ULID format)
+   * @pattern ^[0-9A-HJKMNP-TV-Z]{26}$
+   */
   id: string;
   /**
    * User name

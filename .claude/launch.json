@@ -4,7 +4,7 @@
     {
       "name": "backend",
       "runtimeExecutable": "env",
-      "runtimeArgs": ["DB_PORT=55432", "go", "run", "cmd/server/main.go"],
+      "runtimeArgs": ["go", "run", "cmd/server/main.go"],
       "port": 8080
     },
     {
@@ -16,7 +16,7 @@
     {
       "name": "worker",
       "runtimeExecutable": "env",
-      "runtimeArgs": ["DB_PORT=55432", "go", "run", "cmd/worker/main.go"],
+      "runtimeArgs": ["go", "run", "cmd/worker/main.go"],
       "port": 0
     }
   ]
