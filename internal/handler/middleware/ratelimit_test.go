@@ -3,6 +3,7 @@ package middleware
 import (
 	"net/http"
 	"net/http/httptest"
+	"sync"
 	"testing"
 	"time"
 )
@@ -146,6 +147,36 @@ func TestRateLimiter_RetryAfterHeader(t *testing.T) {
 	}
 }
 
+func TestRateLimiter_RetryAfterReflectsRPS(t *testing.T) {
+	config := RateLimitConfig{
+		RequestsPerSecond: 0.5, // 1 request per 2 seconds
+		BurstSize:         1,
+		CleanupInterval:   10 * time.Minute,
+		StaleEntryTTL:     10 * time.Minute,
+	}
+	rl := NewRateLimiter(config)
+	defer rl.Stop()
+
+	handler := rl.Handler(newTestHandler())
+
+	// Exhaust burst
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req.RemoteAddr = "10.0.0.1:8080"
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+
+	// Rate limited request
+	req = httptest.NewRequest(http.MethodGet, "/", nil)
+	req.RemoteAddr = "10.0.0.1:8080"
+	w = httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+
+	retryAfter := w.Header().Get("Retry-After")
+	if retryAfter != "2" {
+		t.Errorf("expected Retry-After header to be '2' for 0.5 RPS, got '%s'", retryAfter)
+	}
+}
+
 func TestRateLimiter_Cleanup(t *testing.T) {
 	config := RateLimitConfig{
 		RequestsPerSecond: 10,
@@ -174,35 +205,131 @@ func TestRateLimiter_Cleanup(t *testing.T) {
 	}
 }
 
+func TestRateLimiter_StopIsIdempotent(t *testing.T) {
+	config := DefaultRateLimitConfig()
+	rl := NewRateLimiter(config)
+
+	// Calling Stop multiple times should not panic
+	rl.Stop()
+	rl.Stop()
+	rl.Stop()
+}
+
+func TestRateLimiter_Concurrent(t *testing.T) {
+	config := RateLimitConfig{
+		RequestsPerSecond: 100,
+		BurstSize:         100,
+		CleanupInterval:   10 * time.Minute,
+		StaleEntryTTL:     10 * time.Minute,
+	}
+	rl := NewRateLimiter(config)
+	defer rl.Stop()
+
+	handler := rl.Handler(newTestHandler())
+
+	var wg sync.WaitGroup
+	for i := 0; i < 100; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			req := httptest.NewRequest(http.MethodGet, "/", nil)
+			req.RemoteAddr = "192.168.1.1:12345"
+			w := httptest.NewRecorder()
+			handler.ServeHTTP(w, req)
+		}()
+	}
+	wg.Wait()
+}
+
 func TestExtractIP_RemoteAddr(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	req.RemoteAddr = "192.168.1.1:12345"
 
-	ip := extractIP(req)
+	ip := extractIP(req, false)
 	if ip != "192.168.1.1" {
 		t.Errorf("expected IP '192.168.1.1', got '%s'", ip)
 	}
 }
 
-func TestExtractIP_XRealIP(t *testing.T) {
+func TestExtractIP_XRealIP_Trusted(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	req.Header.Set("X-Real-IP", "10.0.0.1")
 	req.RemoteAddr = "192.168.1.1:12345"
 
-	ip := extractIP(req)
+	ip := extractIP(req, true)
 	if ip != "10.0.0.1" {
 		t.Errorf("expected IP '10.0.0.1', got '%s'", ip)
 	}
 }
 
-func TestExtractIP_XForwardedFor(t *testing.T) {
+func TestExtractIP_XForwardedFor_Trusted(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	req.Header.Set("X-Forwarded-For", "203.0.113.50")
 	req.Header.Set("X-Real-IP", "10.0.0.1")
 	req.RemoteAddr = "192.168.1.1:12345"
 
-	ip := extractIP(req)
+	ip := extractIP(req, true)
 	if ip != "203.0.113.50" {
 		t.Errorf("expected IP '203.0.113.50', got '%s'", ip)
+	}
+}
+
+func TestExtractIP_XForwardedFor_MultipleIPs(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req.Header.Set("X-Forwarded-For", "203.0.113.50, 198.51.100.1, 10.0.0.1")
+	req.RemoteAddr = "192.168.1.1:12345"
+
+	ip := extractIP(req, true)
+	if ip != "203.0.113.50" {
+		t.Errorf("expected first IP '203.0.113.50', got '%s'", ip)
+	}
+}
+
+func TestExtractIP_XForwardedFor_InvalidFirstIP(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req.Header.Set("X-Forwarded-For", "not-an-ip, 203.0.113.50")
+	req.RemoteAddr = "192.168.1.1:12345"
+
+	// Invalid first IP should fall through to RemoteAddr
+	ip := extractIP(req, true)
+	if ip != "192.168.1.1" {
+		t.Errorf("expected fallback to RemoteAddr '192.168.1.1', got '%s'", ip)
+	}
+}
+
+func TestExtractIP_XForwardedFor_Untrusted(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req.Header.Set("X-Forwarded-For", "203.0.113.50")
+	req.Header.Set("X-Real-IP", "10.0.0.1")
+	req.RemoteAddr = "192.168.1.1:12345"
+
+	// When not trusting XFF, should use RemoteAddr
+	ip := extractIP(req, false)
+	if ip != "192.168.1.1" {
+		t.Errorf("expected RemoteAddr IP '192.168.1.1' when XFF untrusted, got '%s'", ip)
+	}
+}
+
+func TestExtractIP_XRealIP_Untrusted(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req.Header.Set("X-Real-IP", "10.0.0.1")
+	req.RemoteAddr = "192.168.1.1:12345"
+
+	// When not trusting XFF, should use RemoteAddr
+	ip := extractIP(req, false)
+	if ip != "192.168.1.1" {
+		t.Errorf("expected RemoteAddr IP '192.168.1.1' when XFF untrusted, got '%s'", ip)
+	}
+}
+
+func TestExtractIP_XRealIP_InvalidIP(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req.Header.Set("X-Real-IP", "not-an-ip")
+	req.RemoteAddr = "192.168.1.1:12345"
+
+	// Invalid X-Real-IP should fall through to RemoteAddr
+	ip := extractIP(req, true)
+	if ip != "192.168.1.1" {
+		t.Errorf("expected fallback to RemoteAddr '192.168.1.1', got '%s'", ip)
 	}
 }

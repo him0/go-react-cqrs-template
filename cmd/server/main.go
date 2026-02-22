@@ -122,12 +122,14 @@ func main() {
 	if cfg.RateLimiter.BurstSize > 0 {
 		rateLimitConfig.BurstSize = cfg.RateLimiter.BurstSize
 	}
+	rateLimitConfig.TrustXForwardedFor = cfg.RateLimiter.TrustXForwardedFor
 	rateLimiter := handlermw.NewRateLimiter(rateLimitConfig)
 	defer rateLimiter.Stop()
 
 	log.Info("rate limiter configured",
 		slog.Float64("requests_per_second", rateLimitConfig.RequestsPerSecond),
 		slog.Int("burst_size", rateLimitConfig.BurstSize),
+		slog.Bool("trust_x_forwarded_for", rateLimitConfig.TrustXForwardedFor),
 	)
 
 	// ヘルスチェックエンドポイント（バリデーション・レートリミット不要）

@@ -1,9 +1,13 @@
 package middleware
 
 import (
+	"math"
 	"net"
 	"net/http"
+	"strconv"
+	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"golang.org/x/time/rate"
@@ -19,21 +23,26 @@ type RateLimitConfig struct {
 	CleanupInterval time.Duration
 	// StaleEntryTTL is how long after last access before an entry is considered stale.
 	StaleEntryTTL time.Duration
+	// TrustXForwardedFor controls whether X-Forwarded-For and X-Real-IP headers
+	// are trusted for client IP extraction. Set to true only when running behind
+	// a trusted reverse proxy. When false (default), only RemoteAddr is used.
+	TrustXForwardedFor bool
 }
 
 // DefaultRateLimitConfig returns a RateLimitConfig with sensible defaults.
 func DefaultRateLimitConfig() RateLimitConfig {
 	return RateLimitConfig{
-		RequestsPerSecond: 10,
-		BurstSize:         20,
-		CleanupInterval:   5 * time.Minute,
-		StaleEntryTTL:     10 * time.Minute,
+		RequestsPerSecond:  10,
+		BurstSize:          20,
+		CleanupInterval:    5 * time.Minute,
+		StaleEntryTTL:      10 * time.Minute,
+		TrustXForwardedFor: false,
 	}
 }
 
 type visitor struct {
 	limiter  *rate.Limiter
-	lastSeen time.Time
+	lastSeen atomic.Int64 // Unix nanoseconds
 }
 
 // RateLimiter provides IP-based rate limiting using the Token Bucket algorithm.
@@ -41,6 +50,7 @@ type RateLimiter struct {
 	config   RateLimitConfig
 	visitors sync.Map
 	stopCh   chan struct{}
+	stopOnce sync.Once
 }
 
 // NewRateLimiter creates a new RateLimiter with the given configuration.
@@ -57,24 +67,29 @@ func NewRateLimiter(config RateLimitConfig) *RateLimiter {
 }
 
 // Stop stops the background cleanup goroutine.
+// It is safe to call Stop multiple times.
 func (rl *RateLimiter) Stop() {
-	close(rl.stopCh)
+	rl.stopOnce.Do(func() {
+		close(rl.stopCh)
+	})
 }
 
 // getVisitor retrieves or creates a rate limiter for the given IP address.
+// Uses LoadOrStore to avoid TOCTOU races with concurrent requests for the same IP.
 func (rl *RateLimiter) getVisitor(ip string) *rate.Limiter {
-	if v, ok := rl.visitors.Load(ip); ok {
-		vis := v.(*visitor)
-		vis.lastSeen = time.Now()
-		return vis.limiter
-	}
+	now := time.Now().UnixNano()
 
-	limiter := rate.NewLimiter(rate.Limit(rl.config.RequestsPerSecond), rl.config.BurstSize)
-	rl.visitors.Store(ip, &visitor{
-		limiter:  limiter,
-		lastSeen: time.Now(),
-	})
-	return limiter
+	newVis := &visitor{
+		limiter: rate.NewLimiter(rate.Limit(rl.config.RequestsPerSecond), rl.config.BurstSize),
+	}
+	newVis.lastSeen.Store(now)
+
+	actual, loaded := rl.visitors.LoadOrStore(ip, newVis)
+	vis := actual.(*visitor)
+	if loaded {
+		vis.lastSeen.Store(now)
+	}
+	return vis.limiter
 }
 
 // cleanupLoop periodically removes stale visitor entries.
@@ -94,10 +109,10 @@ func (rl *RateLimiter) cleanupLoop() {
 
 // cleanup removes visitor entries that have not been seen recently.
 func (rl *RateLimiter) cleanup() {
-	threshold := time.Now().Add(-rl.config.StaleEntryTTL)
+	threshold := time.Now().Add(-rl.config.StaleEntryTTL).UnixNano()
 	rl.visitors.Range(func(key, value any) bool {
 		vis := value.(*visitor)
-		if vis.lastSeen.Before(threshold) {
+		if vis.lastSeen.Load() < threshold {
 			rl.visitors.Delete(key)
 		}
 		return true
@@ -109,11 +124,15 @@ func (rl *RateLimiter) cleanup() {
 // with a Retry-After header.
 func (rl *RateLimiter) Handler(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ip := extractIP(r)
+		ip := extractIP(r, rl.config.TrustXForwardedFor)
 		limiter := rl.getVisitor(ip)
 
 		if !limiter.Allow() {
-			w.Header().Set("Retry-After", "1")
+			retryAfter := int(math.Ceil(1.0 / rl.config.RequestsPerSecond))
+			if retryAfter < 1 {
+				retryAfter = 1
+			}
+			w.Header().Set("Retry-After", strconv.Itoa(retryAfter))
 			http.Error(w, http.StatusText(http.StatusTooManyRequests), http.StatusTooManyRequests)
 			return
 		}
@@ -123,35 +142,26 @@ func (rl *RateLimiter) Handler(next http.Handler) http.Handler {
 }
 
 // extractIP extracts the client IP address from the request.
-// It checks X-Forwarded-For and X-Real-IP headers first, then falls back
-// to RemoteAddr.
-func extractIP(r *http.Request) string {
-	// Check X-Forwarded-For header
-	if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
-		// X-Forwarded-For may contain multiple IPs; use the first one
-		if ip, _, err := net.SplitHostPort(xff); err == nil {
-			return ip
-		}
-		// It might not have a port
-		if netIP := net.ParseIP(xff); netIP != nil {
-			return xff
-		}
-		// Take the first IP from a comma-separated list
-		for i := 0; i < len(xff); i++ {
-			if xff[i] == ',' {
-				candidate := xff[:i]
-				if netIP := net.ParseIP(candidate); netIP != nil {
-					return candidate
-				}
-				break
+// When trustXFF is true, it checks X-Forwarded-For and X-Real-IP headers first.
+// Otherwise, it only uses RemoteAddr (safe default for untrusted networks).
+func extractIP(r *http.Request, trustXFF bool) string {
+	if trustXFF {
+		// Check X-Forwarded-For header (first IP in comma-separated list)
+		if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
+			first, _, _ := strings.Cut(xff, ",")
+			first = strings.TrimSpace(first)
+			if net.ParseIP(first) != nil {
+				return first
 			}
 		}
-		return xff
-	}
 
-	// Check X-Real-IP header
-	if xri := r.Header.Get("X-Real-IP"); xri != "" {
-		return xri
+		// Check X-Real-IP header
+		if xri := r.Header.Get("X-Real-IP"); xri != "" {
+			xri = strings.TrimSpace(xri)
+			if net.ParseIP(xri) != nil {
+				return xri
+			}
+		}
 	}
 
 	// Fall back to RemoteAddr

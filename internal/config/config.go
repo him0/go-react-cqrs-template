@@ -40,8 +40,9 @@ type LogConfig struct {
 
 // RateLimiterConfig はレートリミッターの設定
 type RateLimiterConfig struct {
-	RequestsPerSecond float64 `envconfig:"RATE_LIMIT_RPS" default:"0"`
-	BurstSize         int     `envconfig:"RATE_LIMIT_BURST" default:"0"`
+	RequestsPerSecond  float64 `envconfig:"RATE_LIMIT_RPS" default:"0"`
+	BurstSize          int     `envconfig:"RATE_LIMIT_BURST" default:"0"`
+	TrustXForwardedFor bool    `envconfig:"RATE_LIMIT_TRUST_XFF" default:"false"`
 }
 
 // Load は環境変数からConfigを読み込む
@@ -108,6 +109,12 @@ func processStruct(v reflect.Value) error {
 				return fmt.Errorf("failed to parse %s=%q as float64: %w", envKey, val, err)
 			}
 			fieldVal.SetFloat(floatVal)
+		case reflect.Bool:
+			boolVal, err := strconv.ParseBool(val)
+			if err != nil {
+				return fmt.Errorf("failed to parse %s=%q as bool: %w", envKey, val, err)
+			}
+			fieldVal.SetBool(boolVal)
 		default:
 			return fmt.Errorf("unsupported field type %s for %s", field.Type.Kind(), field.Name)
 		}
