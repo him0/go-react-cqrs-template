@@ -2,6 +2,7 @@ import { createRootRoute, Link, Outlet } from '@tanstack/react-router'
 import { TanStackRouterDevtools } from '@tanstack/router-devtools'
 import { useEffect } from 'react'
 import { ThemeToggle } from '@/components/ThemeToggle'
+import { Toaster } from '@/components/ui/sonner'
 import { initTheme } from '@/lib/theme'
 
 function RootComponent() {
@@ -44,6 +45,7 @@ function RootComponent() {
       <main className="container mx-auto px-4 py-8">
         <Outlet />
       </main>
+      <Toaster />
       <TanStackRouterDevtools />
     </div>
   )

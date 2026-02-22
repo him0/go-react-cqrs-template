@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/example/go-react-cqrs-template/internal/handler"
-	ratelimitmw "github.com/example/go-react-cqrs-template/internal/handler/middleware"
+	handlermw "github.com/example/go-react-cqrs-template/internal/handler/middleware"
 	"github.com/example/go-react-cqrs-template/internal/handler/validation"
 	"github.com/example/go-react-cqrs-template/internal/infrastructure"
 	"github.com/example/go-react-cqrs-template/internal/pkg/logger"
@@ -54,7 +54,11 @@ func main() {
 		)
 		os.Exit(1)
 	}
-	defer db.Close()
+	defer func() {
+		if closeErr := db.Close(); closeErr != nil {
+			log.Error("failed to close database", slog.String("error", closeErr.Error()))
+		}
+	}()
 
 	log.Info("successfully connected to database")
 
@@ -92,20 +96,21 @@ func main() {
 		AllowCredentials: true,
 		MaxAge:           300,
 	}))
+	r.Use(handlermw.SecurityHeaders)
 
 	log.Info("middleware configured",
 		slog.String("cors_origin", "http://localhost:3000"),
 	)
 
 	// レートリミットミドルウェアの初期化
-	rateLimitConfig := ratelimitmw.DefaultRateLimitConfig()
+	rateLimitConfig := handlermw.DefaultRateLimitConfig()
 	if rps := getEnvFloat("RATE_LIMIT_RPS", 0); rps > 0 {
 		rateLimitConfig.RequestsPerSecond = rps
 	}
 	if burst := getEnvInt("RATE_LIMIT_BURST", 0); burst > 0 {
 		rateLimitConfig.BurstSize = burst
 	}
-	rateLimiter := ratelimitmw.NewRateLimiter(rateLimitConfig)
+	rateLimiter := handlermw.NewRateLimiter(rateLimitConfig)
 	defer rateLimiter.Stop()
 
 	log.Info("rate limiter configured",
