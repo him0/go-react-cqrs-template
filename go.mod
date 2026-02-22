@@ -10,6 +10,7 @@ require (
 	github.com/lib/pq v1.11.2
 	github.com/oapi-codegen/runtime v1.1.2
 	github.com/oklog/ulid/v2 v2.1.1
+	golang.org/x/time v0.9.0
 )
 
 require (
