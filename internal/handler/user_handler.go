@@ -2,9 +2,9 @@ package handler
 
 import (
 	"encoding/json"
-	"log/slog"
 	"net/http"
 
+	"github.com/example/go-react-cqrs-template/internal/pkg/logger"
 	"github.com/example/go-react-cqrs-template/internal/usecase"
 	"github.com/example/go-react-cqrs-template/pkg/generated/openapi"
 	openapi_types "github.com/oapi-codegen/runtime/types"
@@ -20,7 +20,6 @@ type UserHandler struct {
 	listUsers  *usecase.ListUsersUsecase
 	updateUser *usecase.UpdateUserUsecase
 	deleteUser *usecase.DeleteUserUsecase
-	logger     *slog.Logger
 }
 
 // NewUserHandler UserHandlerのコンストラクタ
@@ -30,7 +29,6 @@ func NewUserHandler(
 	listUsers *usecase.ListUsersUsecase,
 	updateUser *usecase.UpdateUserUsecase,
 	deleteUser *usecase.DeleteUserUsecase,
-	logger *slog.Logger,
 ) *UserHandler {
 	return &UserHandler{
 		createUser: createUser,
@@ -38,7 +36,6 @@ func NewUserHandler(
 		listUsers:  listUsers,
 		updateUser: updateUser,
 		deleteUser: deleteUser,
-		logger:     logger,
 	}
 }
 
@@ -50,8 +47,9 @@ func (h *UserHandler) UsersCreateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.createUser.Execute(r.Context(), req.Name, string(req.Email)); err != nil {
-		HandleError(w, err, h.logger)
+	ctx := r.Context()
+	if err := h.createUser.Execute(ctx, req.Name, string(req.Email)); err != nil {
+		HandleError(w, err, logger.FromContext(ctx))
 		return
 	}
 
@@ -60,9 +58,10 @@ func (h *UserHandler) UsersCreateUser(w http.ResponseWriter, r *http.Request) {
 
 // UsersGetUser ユーザーを取得（OpenAPI ServerInterface実装）
 func (h *UserHandler) UsersGetUser(w http.ResponseWriter, r *http.Request, userId string) {
-	user, err := h.findUser.Execute(r.Context(), userId)
+	ctx := r.Context()
+	user, err := h.findUser.Execute(ctx, userId)
 	if err != nil {
-		HandleError(w, err, h.logger)
+		HandleError(w, err, logger.FromContext(ctx))
 		return
 	}
 
@@ -79,6 +78,8 @@ func (h *UserHandler) UsersGetUser(w http.ResponseWriter, r *http.Request, userI
 
 // UsersListUsers ユーザー一覧を取得（OpenAPI ServerInterface実装）
 func (h *UserHandler) UsersListUsers(w http.ResponseWriter, r *http.Request, params openapi.UsersListUsersParams) {
+	ctx := r.Context()
+
 	// デフォルト値の設定
 	limit := 10
 	offset := 0
@@ -93,9 +94,9 @@ func (h *UserHandler) UsersListUsers(w http.ResponseWriter, r *http.Request, par
 		offset = int(*params.Offset)
 	}
 
-	users, total, err := h.listUsers.Execute(r.Context(), limit, offset)
+	users, total, err := h.listUsers.Execute(ctx, limit, offset)
 	if err != nil {
-		HandleError(w, err, h.logger)
+		HandleError(w, err, logger.FromContext(ctx))
 		return
 	}
 
@@ -120,6 +121,8 @@ func (h *UserHandler) UsersListUsers(w http.ResponseWriter, r *http.Request, par
 
 // UsersUpdateUser ユーザーを更新（OpenAPI ServerInterface実装）
 func (h *UserHandler) UsersUpdateUser(w http.ResponseWriter, r *http.Request, userId string) {
+	ctx := r.Context()
+
 	var req openapi.UpdateUserRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		respondError(w, http.StatusBadRequest, "リクエストの形式が不正です")
@@ -137,8 +140,8 @@ func (h *UserHandler) UsersUpdateUser(w http.ResponseWriter, r *http.Request, us
 		email = string(*req.Email)
 	}
 
-	if err := h.updateUser.Execute(r.Context(), userId, name, email); err != nil {
-		HandleError(w, err, h.logger)
+	if err := h.updateUser.Execute(ctx, userId, name, email); err != nil {
+		HandleError(w, err, logger.FromContext(ctx))
 		return
 	}
 
@@ -147,8 +150,9 @@ func (h *UserHandler) UsersUpdateUser(w http.ResponseWriter, r *http.Request, us
 
 // UsersDeleteUser ユーザーを削除（OpenAPI ServerInterface実装）
 func (h *UserHandler) UsersDeleteUser(w http.ResponseWriter, r *http.Request, userId string) {
-	if err := h.deleteUser.Execute(r.Context(), userId); err != nil {
-		HandleError(w, err, h.logger)
+	ctx := r.Context()
+	if err := h.deleteUser.Execute(ctx, userId); err != nil {
+		HandleError(w, err, logger.FromContext(ctx))
 		return
 	}
 

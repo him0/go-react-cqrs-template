@@ -89,7 +89,6 @@ func main() {
 		listUsersUsecase,
 		updateUserUsecase,
 		deleteUserUsecase,
-		log,
 	)
 
 	// CORSオリジンの解析（カンマ区切りで複数指定可能）

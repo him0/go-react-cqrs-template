@@ -2,10 +2,12 @@ package usecase
 
 import (
 	"context"
+	"log/slog"
 
 	"github.com/example/go-react-cqrs-template/internal/command"
 	"github.com/example/go-react-cqrs-template/internal/domain"
 	"github.com/example/go-react-cqrs-template/internal/infrastructure"
+	"github.com/example/go-react-cqrs-template/internal/pkg/logger"
 )
 
 // UpdateUserUsecase ユーザー更新ユースケース
@@ -27,6 +29,9 @@ func NewUpdateUserUsecase(
 
 // Execute ユーザーを更新
 func (u *UpdateUserUsecase) Execute(ctx context.Context, id, name, email string) error {
+	log := logger.FromContext(ctx)
+	log.Info("updating user", slog.String("user_id", id))
+
 	return u.txManager.RunInTransaction(ctx, func(ctx context.Context, tx infrastructure.DBTX) error {
 		// 行ロック付きでユーザーを取得
 		user, err := command.FindByIDForUpdate(ctx, tx, id)
