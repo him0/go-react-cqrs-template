@@ -1,5 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useQueryClient } from '@tanstack/react-query'
+import { toast } from 'sonner'
 import { z } from 'zod'
 import {
   useUsersListUsers,
@@ -58,6 +59,10 @@ function Users() {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: getUsersListUsersQueryKey() })
         navigate({ search: { ...search, showCreate: undefined } })
+        toast.success('ユーザーを作成しました')
+      },
+      onError: () => {
+        toast.error('エラーが発生しました')
       },
     },
   })
@@ -76,6 +81,10 @@ function Users() {
           queryClient.invalidateQueries({ queryKey: getUsersGetUserQueryKey(selectedUserId) })
         }
         navigate({ search: { ...search, isEdit: undefined } })
+        toast.success('ユーザーを更新しました')
+      },
+      onError: () => {
+        toast.error('エラーが発生しました')
       },
     },
   })
@@ -85,6 +94,10 @@ function Users() {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: getUsersListUsersQueryKey() })
         navigate({ search: { ...search, userId: undefined, isEdit: undefined } })
+        toast.success('ユーザーを削除しました')
+      },
+      onError: () => {
+        toast.error('エラーが発生しました')
       },
     },
   })

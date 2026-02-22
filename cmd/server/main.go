@@ -12,6 +12,7 @@ import (
 
 	"github.com/example/go-react-cqrs-template/internal/config"
 	"github.com/example/go-react-cqrs-template/internal/handler"
+	handlermw "github.com/example/go-react-cqrs-template/internal/handler/middleware"
 	"github.com/example/go-react-cqrs-template/internal/handler/validation"
 	"github.com/example/go-react-cqrs-template/internal/infrastructure"
 	"github.com/example/go-react-cqrs-template/internal/pkg/logger"
@@ -108,12 +109,29 @@ func main() {
 		AllowCredentials: true,
 		MaxAge:           300,
 	}))
+	r.Use(handlermw.SecurityHeaders)
 
 	log.Info("middleware configured",
 		slog.String("cors_origins", cfg.Server.CORSOrigins),
 	)
 
-	// ヘルスチェックエンドポイント（バリデーションミドルウェア不要）
+	// レートリミットミドルウェアの初期化
+	rateLimitConfig := handlermw.DefaultRateLimitConfig()
+	if cfg.RateLimiter.RequestsPerSecond > 0 {
+		rateLimitConfig.RequestsPerSecond = cfg.RateLimiter.RequestsPerSecond
+	}
+	if cfg.RateLimiter.BurstSize > 0 {
+		rateLimitConfig.BurstSize = cfg.RateLimiter.BurstSize
+	}
+	rateLimiter := handlermw.NewRateLimiter(rateLimitConfig)
+	defer rateLimiter.Stop()
+
+	log.Info("rate limiter configured",
+		slog.Float64("requests_per_second", rateLimitConfig.RequestsPerSecond),
+		slog.Int("burst_size", rateLimitConfig.BurstSize),
+	)
+
+	// ヘルスチェックエンドポイント（バリデーション・レートリミット不要）
 	healthHandler := handler.NewHealthHandler(db)
 	r.Get("/healthz", healthHandler.Liveness)
 	r.Get("/readyz", healthHandler.Readiness)
@@ -130,6 +148,8 @@ func main() {
 
 	// OpenAPI生成のハンドラーを使用してAPIルートを設定
 	r.Route("/api/v1", func(r chi.Router) {
+		// レートリミット（ヘルスチェック以外に適用）
+		r.Use(rateLimiter.Handler)
 		// OpenAPI仕様に基づくリクエストバリデーション
 		r.Use(validationMiddleware.Handler)
 		// OpenAPI仕様に従ったルーティングを自動生成

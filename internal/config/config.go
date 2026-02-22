@@ -9,9 +9,10 @@ import (
 
 // Config はアプリケーション全体の設定を保持する構造体
 type Config struct {
-	Server   ServerConfig
-	Database DatabaseConfig
-	Log      LogConfig
+	Server      ServerConfig
+	Database    DatabaseConfig
+	Log         LogConfig
+	RateLimiter RateLimiterConfig
 }
 
 // ServerConfig はHTTPサーバーの設定
@@ -35,6 +36,12 @@ type DatabaseConfig struct {
 type LogConfig struct {
 	Level  string `envconfig:"LOG_LEVEL" default:"info"`
 	Format string `envconfig:"LOG_FORMAT" default:"json"`
+}
+
+// RateLimiterConfig はレートリミッターの設定
+type RateLimiterConfig struct {
+	RequestsPerSecond float64 `envconfig:"RATE_LIMIT_RPS" default:"0"`
+	BurstSize         int     `envconfig:"RATE_LIMIT_BURST" default:"0"`
 }
 
 // Load は環境変数からConfigを読み込む
@@ -95,6 +102,12 @@ func processStruct(v reflect.Value) error {
 				return fmt.Errorf("failed to parse %s=%q as int: %w", envKey, val, err)
 			}
 			fieldVal.SetInt(int64(intVal))
+		case reflect.Float64:
+			floatVal, err := strconv.ParseFloat(val, 64)
+			if err != nil {
+				return fmt.Errorf("failed to parse %s=%q as float64: %w", envKey, val, err)
+			}
+			fieldVal.SetFloat(floatVal)
 		default:
 			return fmt.Errorf("unsupported field type %s for %s", field.Type.Kind(), field.Name)
 		}
