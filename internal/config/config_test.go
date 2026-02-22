@@ -11,22 +11,17 @@ func TestLoad_DefaultValues(t *testing.T) {
 		"PORT", "SHUTDOWN_TIMEOUT", "CORS_ORIGINS",
 		"DB_HOST", "DB_PORT", "DB_USER", "DB_PASSWORD", "DB_NAME", "DB_SSLMODE",
 		"LOG_LEVEL", "LOG_FORMAT",
+		"RATE_LIMIT_RPS", "RATE_LIMIT_BURST",
 	}
 
 	// 既存の環境変数を保存してクリア
-	saved := make(map[string]string)
 	for _, key := range envVars {
-		saved[key] = os.Getenv(key)
-		os.Unsetenv(key)
-	}
-	// テスト後に環境変数を復元
-	t.Cleanup(func() {
-		for key, val := range saved {
-			if val != "" {
-				os.Setenv(key, val)
-			}
+		if val, ok := os.LookupEnv(key); ok {
+			t.Setenv(key, val)
 		}
-	})
+		t.Setenv(key, "")
+		os.Unsetenv(key) //nolint:errcheck // test cleanup
+	}
 
 	cfg, err := Load()
 	if err != nil {
@@ -71,6 +66,14 @@ func TestLoad_DefaultValues(t *testing.T) {
 	if cfg.Log.Format != "json" {
 		t.Errorf("Log.Format = %q, want %q", cfg.Log.Format, "json")
 	}
+
+	// RateLimiter defaults
+	if cfg.RateLimiter.RequestsPerSecond != 0 {
+		t.Errorf("RateLimiter.RequestsPerSecond = %f, want %f", cfg.RateLimiter.RequestsPerSecond, 0.0)
+	}
+	if cfg.RateLimiter.BurstSize != 0 {
+		t.Errorf("RateLimiter.BurstSize = %d, want %d", cfg.RateLimiter.BurstSize, 0)
+	}
 }
 
 func TestLoad_EnvironmentVariableOverrides(t *testing.T) {
@@ -87,24 +90,13 @@ func TestLoad_EnvironmentVariableOverrides(t *testing.T) {
 		"DB_SSLMODE":       "require",
 		"LOG_LEVEL":        "debug",
 		"LOG_FORMAT":       "text",
+		"RATE_LIMIT_RPS":   "100.5",
+		"RATE_LIMIT_BURST": "200",
 	}
 
-	// 既存の環境変数を保存して上書き
-	saved := make(map[string]string)
 	for key, val := range overrides {
-		saved[key] = os.Getenv(key)
-		os.Setenv(key, val)
+		t.Setenv(key, val)
 	}
-	// テスト後に環境変数を復元
-	t.Cleanup(func() {
-		for key, val := range saved {
-			if val != "" {
-				os.Setenv(key, val)
-			} else {
-				os.Unsetenv(key)
-			}
-		}
-	})
 
 	cfg, err := Load()
 	if err != nil {
@@ -148,5 +140,13 @@ func TestLoad_EnvironmentVariableOverrides(t *testing.T) {
 	}
 	if cfg.Log.Format != "text" {
 		t.Errorf("Log.Format = %q, want %q", cfg.Log.Format, "text")
+	}
+
+	// RateLimiter overrides
+	if cfg.RateLimiter.RequestsPerSecond != 100.5 {
+		t.Errorf("RateLimiter.RequestsPerSecond = %f, want %f", cfg.RateLimiter.RequestsPerSecond, 100.5)
+	}
+	if cfg.RateLimiter.BurstSize != 200 {
+		t.Errorf("RateLimiter.BurstSize = %d, want %d", cfg.RateLimiter.BurstSize, 200)
 	}
 }
