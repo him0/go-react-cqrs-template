@@ -6,11 +6,13 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"strconv"
+	"strings"
 	"syscall"
 	"time"
 
+	"github.com/example/go-react-cqrs-template/internal/config"
 	"github.com/example/go-react-cqrs-template/internal/handler"
+	handlermw "github.com/example/go-react-cqrs-template/internal/handler/middleware"
 	"github.com/example/go-react-cqrs-template/internal/handler/validation"
 	"github.com/example/go-react-cqrs-template/internal/infrastructure"
 	"github.com/example/go-react-cqrs-template/internal/pkg/logger"
@@ -27,14 +29,23 @@ func main() {
 	// ロガーのセットアップ
 	log := logger.Setup()
 
+	// 設定の読み込み
+	cfg, err := config.Load()
+	if err != nil {
+		log.Error("failed to load config",
+			slog.String("error", err.Error()),
+		)
+		os.Exit(1)
+	}
+
 	// データベース接続設定
 	dbConfig := infrastructure.Config{
-		Host:     getEnv("DB_HOST", "localhost"),
-		Port:     getEnvInt("DB_PORT", 55432),
-		User:     getEnv("DB_USER", "postgres"),
-		Password: getEnv("DB_PASSWORD", "postgres"),
-		DBName:   getEnv("DB_NAME", "app_db"),
-		SSLMode:  getEnv("DB_SSLMODE", "disable"),
+		Host:     cfg.Database.Host,
+		Port:     cfg.Database.Port,
+		User:     cfg.Database.User,
+		Password: cfg.Database.Password,
+		DBName:   cfg.Database.DBName,
+		SSLMode:  cfg.Database.SSLMode,
 	}
 
 	log.Info("connecting to database",
@@ -80,6 +91,9 @@ func main() {
 		deleteUserUsecase,
 	)
 
+	// CORSオリジンの解析（カンマ区切りで複数指定可能）
+	corsOrigins := strings.Split(cfg.Server.CORSOrigins, ",")
+
 	// ルーターの設定
 	r := chi.NewRouter()
 
@@ -87,19 +101,36 @@ func main() {
 	r.Use(logger.Middleware) // 構造化ログミドルウェア（リクエストID付与）
 	r.Use(middleware.Recoverer)
 	r.Use(cors.Handler(cors.Options{
-		AllowedOrigins:   []string{"http://localhost:3000"},
+		AllowedOrigins:   corsOrigins,
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type"},
 		ExposedHeaders:   []string{"Link"},
 		AllowCredentials: true,
 		MaxAge:           300,
 	}))
+	r.Use(handlermw.SecurityHeaders)
 
 	log.Info("middleware configured",
-		slog.String("cors_origin", "http://localhost:3000"),
+		slog.String("cors_origins", cfg.Server.CORSOrigins),
 	)
 
-	// ヘルスチェックエンドポイント（バリデーションミドルウェア不要）
+	// レートリミットミドルウェアの初期化
+	rateLimitConfig := handlermw.DefaultRateLimitConfig()
+	if cfg.RateLimiter.RequestsPerSecond > 0 {
+		rateLimitConfig.RequestsPerSecond = cfg.RateLimiter.RequestsPerSecond
+	}
+	if cfg.RateLimiter.BurstSize > 0 {
+		rateLimitConfig.BurstSize = cfg.RateLimiter.BurstSize
+	}
+	rateLimiter := handlermw.NewRateLimiter(rateLimitConfig)
+	defer rateLimiter.Stop()
+
+	log.Info("rate limiter configured",
+		slog.Float64("requests_per_second", rateLimitConfig.RequestsPerSecond),
+		slog.Int("burst_size", rateLimitConfig.BurstSize),
+	)
+
+	// ヘルスチェックエンドポイント（バリデーション・レートリミット不要）
 	healthHandler := handler.NewHealthHandler(db)
 	r.Get("/healthz", healthHandler.Liveness)
 	r.Get("/readyz", healthHandler.Readiness)
@@ -116,6 +147,8 @@ func main() {
 
 	// OpenAPI生成のハンドラーを使用してAPIルートを設定
 	r.Route("/api/v1", func(r chi.Router) {
+		// レートリミット（ヘルスチェック以外に適用）
+		r.Use(rateLimiter.Handler)
 		// OpenAPI仕様に基づくリクエストバリデーション
 		r.Use(validationMiddleware.Handler)
 		// OpenAPI仕様に従ったルーティングを自動生成
@@ -127,7 +160,7 @@ func main() {
 	defer stop()
 
 	// サーバー起動
-	port := getEnv("PORT", "8080")
+	port := cfg.Server.Port
 	srv := &http.Server{Addr: ":" + port, Handler: r}
 
 	go func() {
@@ -148,34 +181,13 @@ func main() {
 	<-ctx.Done()
 	log.Info("shutting down server...")
 
-	// Graceful shutdown（タイムアウト: 30秒）
-	shutdownCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	// Graceful shutdown（設定のタイムアウト値を使用）
+	shutdownTimeout := time.Duration(cfg.Server.ShutdownTimeout) * time.Second
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
 	defer cancel()
 
 	if err := srv.Shutdown(shutdownCtx); err != nil {
 		log.Error("server shutdown error", slog.String("error", err.Error()))
 	}
 	log.Info("server stopped")
-}
-
-// getEnv 環境変数を取得、なければデフォルト値を返す
-func getEnv(key, defaultValue string) string {
-	value := os.Getenv(key)
-	if value == "" {
-		return defaultValue
-	}
-	return value
-}
-
-// getEnvInt 環境変数をint型で取得、なければデフォルト値を返す
-func getEnvInt(key string, defaultValue int) int {
-	value := os.Getenv(key)
-	if value == "" {
-		return defaultValue
-	}
-	v, err := strconv.Atoi(value)
-	if err != nil {
-		return defaultValue
-	}
-	return v
 }
